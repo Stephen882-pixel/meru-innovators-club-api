@@ -175,7 +175,7 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
-
+.env
 
 /account/__pycache__
 /blog/__pycache__
