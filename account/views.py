@@ -2,6 +2,9 @@ from tokenize import TokenError
 from venv import logger
 import logging
 from django.contrib.auth import authenticate
+from django.utils.decorators import method_decorator
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
@@ -47,7 +50,47 @@ import string
 
 from django.db.models import Prefetch
 
+
 class RegisterView(APIView):
+
+    @swagger_auto_schema(
+        tags=["Authentication"],
+        operation_description="Register a new user and send an OTP to their email for verification.",
+        request_body=RegisterSerializer,
+        responses={
+            status.HTTP_201_CREATED: openapi.Response(
+                description="Account created successfully. OTP sent to email.",
+                examples={
+                    "application/json": {
+                        "message": "Account created successfully. Please check your email for OTP verification code.",
+                        "status": "success",
+                        "user_data": None
+                    }
+                }
+            ),
+            status.HTTP_400_BAD_REQUEST: openapi.Response(
+                description="Validation error or duplicate email/email.",
+                examples={
+                    "application/json": {
+                        "message": "Username already exists. Please choose a different username.",
+                        "status": "failed",
+                        "errors": {"username":"Username already exists"},
+                        "data": None
+                    }
+                }
+            ),
+            status.HTTP_500_INTERNAL_SERVER_ERROR: openapi.Response(
+                description="Unexpected server error",
+                examples= {
+                    "application/json": {
+                        "message": "An unexpected error occured...",
+                        "status": "failed",
+                        "data": None
+                    }
+                }
+            ),
+        }
+    )
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
 
@@ -305,7 +348,46 @@ def generate_verification_token(user):
 class LoginView(APIView):
     permission_classes = []
     authentication_classes = []
-    
+
+    @swagger_auto_schema(
+        tags=["Authentication"],
+        operation_description="Authenticate a user and return JWT access and refresh tokens.",
+        request_body=LoginSerializer,
+        responses={
+            status.HTTP_200_OK: openapi.Response(
+                description="Login Successfull",
+                examples={
+                    "application/json": {
+                        "message": "Login successfully",
+                        "status": "success",
+                        "data": {
+                            "refresh":"eyJ0eXAiOiJKV1QiLCJh...",
+                            "access": "eyJ0eXAiOiJKV1QiLCJh..."
+                        }
+                    }
+                }
+            ),
+            status.HTTP_403_FORBIDDEN: openapi.Response(
+                description="Invalide credentials or email not verified",
+                examples={
+                    "application/json": {
+                        "message": "Email not verified. Please verify your email.",
+                        "status": "error",
+                        "data": None
+                    }
+                }
+            ),
+            status.HTTP_400_BAD_REQUEST: openapi.Response(
+                description="Validation errors",
+                examples={
+                    "application/json":{
+                        "email":["This field is required"],
+                        "password":["This fields is required"]
+                    }
+                }
+            )
+        }
+    )
     def post(self, request):
         try:
             serializer = LoginSerializer(
@@ -350,6 +432,45 @@ class LoginView(APIView):
 class LogoutView(APIView):
     permission_classes = []
 
+    @swagger_auto_schema(
+        tags=["Authentication"],
+        operation_description="Logs out the user by blacklisting the provided refresh token.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["refresh_token"],
+            properties={
+                "refresh_token":openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description="The refresh token issued at login."
+                ),
+            },
+            example={
+                "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1..."
+            }
+        ),
+        responses={
+            status.HTTP_200_OK: openapi.Response(
+                description="Logout successfully",
+                examples={
+                    "application/json": {
+                        "message": "logout successfully",
+                        "status":"success",
+                        "data": None
+                    }
+                }
+            ),
+            status.HTTP_400_BAD_REQUEST: openapi.Response(
+                description="Invalid or missing refresh tokens",
+                examples={
+                    "application/json": {
+                        "message":"Invalid or expired refresh token",
+                        "status":"error",
+                        "data": None
+                    }
+                }
+            )
+        }
+    )
     def post(self,request):
         try:
             # Get the refresh tokens from the request body
@@ -400,6 +521,60 @@ class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ChangePasswordSerializer
 
+    @swagger_auto_schema(
+        tags=["Authentication"],
+        operation_description="""
+        Change the password of the currently logged-in user.  
+        - Requires **Bearer token authentication**.  
+        - New password must meet strength requirements:
+            * At least 8 characters  
+            * At least one uppercase letter  
+            * At least one lowercase letter  
+            * At least one number  
+            * At least one special character
+        """,
+        request_body=ChangePasswordSerializer,
+        responses={
+            status.HTTP_200_OK: openapi.Response(
+                description="Password change request created successfully. Email verification required.",
+                examples={
+                    "application/json":{
+                        "message":"Please check your email to verify this request",
+                        "status":"pending",
+                        "data":None
+                    }
+                }
+            ),
+            status.HTTP_400_BAD_REQUEST: openapi.Response(
+                description="Validation error",
+                examples={
+                    "application/json":{
+                        "old_password": "Current password is incorrect",
+                        "new_password": "New password must be at least 8 characters long"
+                    }
+                }
+            ),
+            status.HTTP_401_UNAUTHORIZED: openapi.Response(
+                description="Authentication required",
+                examples={
+                    "application/json":{
+                        "detail": "Authentication credentials were not provided."
+                    }
+                }
+            ),
+            status.HTTP_500_INTERNAL_SERVER_ERROR: openapi.Response(
+                description="Unexpected server error",
+                examples={
+                    "application/json":{
+                        "message":"Unexpected error occured",
+                        "status":"failed",
+                        "data": None,
+                        "detail":"Detailed error message"
+                    }
+                }
+            )
+        }
+    )
     def post(self,request):
         try:
             user = request.user
