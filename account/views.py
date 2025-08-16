@@ -421,12 +421,6 @@ class LogoutView(APIView):
 from django.core.signing import TimestampSigner,BadSignature
 import uuid
 
-def generate_verification_token_for_password_reset(user):
-    signer = TimestampSigner()
-    token = signer.sign(f"{user.id}:{uuid.uuid4().hex}")
-    print(f"Genereated token:{token}")
-    return token
-
 
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
