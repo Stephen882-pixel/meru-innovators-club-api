@@ -747,25 +747,6 @@ class UserProfileUpdateView(APIView):
     
 
 
-        
-class EmailVerificationView(APIView):
-    def get(self,request,token):
-        try:
-            # Decode the token (you can replace this with your actual token validation)
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-            user = User.objects.get(id=payload['user_id'])
-
-            # Mark user as active
-            user.is_active =  True
-            user.save()
-
-
-            return HttpResponse("Email verified successfully!", status=status.HTTP_200_OK)
-        except jwt.ExpiredSignatureError:
-            return HttpResponse("Verification token has expired", status=status.HTTP_400_BAD_REQUEST)
-        except jwt.InvalidTokenError:
-            return HttpResponse("Invalid token", status=status.HTTP_400_BAD_REQUEST)
-
 class CustomTokenRefreshView(TokenRefreshView):
     def post(self,request,*args,**kwargs):
         try:
