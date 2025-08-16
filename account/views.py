@@ -747,31 +747,6 @@ class UserProfileUpdateView(APIView):
     
 
 
-class VerifyEmailView(APIView):
-    def get(self,request):
-        uid =request.GET.get('uid')
-        token = request.GET.get('token')
-
-        try:
-            # Decode user ID
-            user_id = urlsafe_base64_encode(uid).decode()
-            user = User.objects.get(pk=user_id)
-
-            # Check token validity
-            if default_token_generator.check_token(user,token):
-                user.is_active = True
-                user.save()
-                return Response({
-                    'message':'Emale verified successfully.You can now login'
-                },status=status.HTTP_200_OK)
-            else:
-                return Response({
-                    'message':'Invalide or expired Token'
-                },status=status.HTTP_400_BAD_REQUEST)
-        except (User.DoesNotExist,ValueError,TypeError):
-            return Response({
-                'message':'Invalide token or user ID'
-            },status=status.HTTP_400_BAD_REQUEST)
         
 class EmailVerificationView(APIView):
     def get(self,request,token):
