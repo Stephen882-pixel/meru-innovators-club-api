@@ -745,20 +745,7 @@ class UserProfileUpdateView(APIView):
         """Partial update of user profile (same functionality as PUT for this case)"""
         return self.put(request)
     
-        
-def send_verification_email(self, user):
-    token = self.generate_verification_token(user)
-    verification_url = f"{settings.FRONTEND_BASE_URL}/{token}"
 
-
-
-    send_mail(
-        subject="Email Verification",
-        message=f"Please verify your email by clicking this link: {verification_url}",
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[user.email],
-        fail_silently=False,
-    )
 
 class VerifyEmailView(APIView):
     def get(self,request):
