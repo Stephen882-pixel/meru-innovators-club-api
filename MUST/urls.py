@@ -34,37 +34,31 @@ schema_view = get_schema_view(
 
 
 
-
-# from AboutUs import urls
 from Feedback import urls
 from testimonials.views import TestimonialViewSet
-# Main router
 router = DefaultRouter()
 router.register(r'event-registrations', EventRegistrationViewSet, basename='events_registration')
 router.register(r'events', EventViewSet, basename='events')
 router.register(r'communities', CommunityProfileViewSet)
 router.register(r'testimonials', TestimonialViewSet)
 router.register(r'partners', PartnerViewSet)
-#router.register(r'community-members', CommunityMembersView, basename='community-members')
-
 
 
 community_viewset = CommunityProfileViewSet.as_view({
-    'post':'create',  # for /add-community/
-    'get':'list',     # for /list-communities/
+    'post':'create',
+    'get':'list',
 })
 
 detail_viewset = CommunityProfileViewSet.as_view({
-    'get':'retrieve',       # For /retrieve-community/<pk>/
-    'put':'update',         # For /update-community/<pk>/
-    'patch':'update',       # Partial update for /update-community/<pk>/
+    'get':'retrieve',
+    'put':'update',
+    'patch':'update',
 })
 
 search_viewset = CommunityProfileViewSet.as_view({
-    'get':'search_by_name',     # For /search-community/?name=<name>
+    'get':'search_by_name',
 })
 
-# Nested router for event registrations
 event_router = routers.NestedDefaultRouter(router, r'events', lookup='event')
 event_router.register(r'registrations', EventRegistrationViewSet, basename='event-registrations')
 
@@ -96,21 +90,11 @@ urlpatterns = [
     path('search-community/', search_viewset, name='search-community'),
     path('communities/<int:pk>/join/', JoinCommunityView.as_view(), name='join-community'),
     path('communities/<int:pk>/members/', CommunityMembersView.as_view(), name='community_members'),
-
-
-    
     path('', include(router.urls)),
     path('', include(event_router.urls)),
-
     path('testimonies/', include('testimonials.urls')),
-
-
     path('', include('Feedback.urls')),
     path('comments/', include('comments.urls')),
-
-
     path('api/', include('Club.urls')),
-
-    # path('api/',include('fcm_django.urls')),
 ]
 

@@ -152,6 +152,51 @@ class UnifiedOTPVerificationView(APIView):
     permission_classes = []
     authentication_classes = []
 
+
+    @swagger_auto_schema(
+        tags=["Authentication"],
+        operation_description="Verify an OTP for registration or password reset",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["email","otp_code"],
+            properties={
+                "email":openapi.Schema(type=openapi.TYPE_STRING,format=openapi.FORMAT_EMAIL,description="User's email address"),
+                "otp_code":openapi.Schema(type=openapi.TYPE_STRING,description="One-Time Password (OTP) sent to the user's email"),
+            },
+        ),
+        responses={
+            200: openapi.Response(
+                description="OTP verified successfully",
+                examples={
+                    "application/json": {
+                        "message":"Email verified successfully you can now login.",
+                        "status":"success",
+                        "data":None
+                    }
+                }
+            ),
+            400: openapi.Response(
+                description="Bad request (missing/invalid OTP or email)",
+                examples={
+                    "application/json":{
+                        "message":"Invalid OTP",
+                        "status":"error",
+                        "data": None
+                    }
+                }
+            ),
+            500: openapi.Response(
+                description="Internal Server Error",
+                examples={
+                    "application/json":{
+                        "message":"An error occured <errror message>",
+                        "status":"error",
+                        "data":None
+                    }
+                }
+            ),
+        },
+    )
     def post(self, request):
         email = request.data.get('email')
         otp_code = request.data.get('otp_code')
@@ -409,7 +454,7 @@ class ChangePasswordView(APIView):
                     "application/json":{
                         "message":"Please check your email to verify this request",
                         "status":"pending",
-                        "data":None
+                        "data":None,
                     }
                 }
             ),
@@ -471,9 +516,47 @@ class ChangePasswordView(APIView):
         
 
 import json
+
 class UserDataView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(
+        tags=["Authentication"],
+        operation_description="Retrieve the authenticated user's profile data.",
+        responses={
+            200: openapi.Response(
+                description="User data retrieved successfully",
+                examples={
+                    "application/json":{
+                        "message":"User data retrieved succefully",
+                        "status":"success",
+                        "data":{
+                            "id":1,
+                            "username":"johndoe",
+                            "email":"johndoe@gmail.com",
+                            "first_name": "John",
+                            "last_name": "Doe",
+                            "course": "Computer Science",
+                            "registration_no": "CS12345",
+                            "bio": "Passionate developer.",
+                            "tech_stacks": ["Python", "Django", "React"],
+                            "social_media": {"github": "https://github.com/johndoe"},
+                            "photo": "http://localhost:8000/media/photos/johndoe.jpg",
+                            "graduation_year": 2025,
+                            "projects": ["InsuraChain", "DebtTracker"],
+                            "skills": ["Backend Development", "API Design"]
+                        }
+                    }
+                }
+            ),
+            404: openapi.Response(
+                description="User profile not found",
+                examples={
+                    "application/json":{"error":"User profile does not exist"}
+                }
+            ),
+        }
+    )
     def get(self,request):
         user = request.user
         try:
@@ -511,37 +594,136 @@ class UserDataView(APIView):
 class UserProfileUpdateView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self,request):
-        user = request.user
-        try:
-            user_profile = UserProfile.objects.get(user=user)
-            user_data = {
-                'id': user.id,
-                'username': user.username,
-                'email': user.email,
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'course': user_profile.course,
-                'registration_no': user_profile.registration_no,
-                'bio': user_profile.bio,
-                'tech_stacks': user_profile.get_tech_stacks(),
-                'social_media': user_profile.get_social_media(),
-                'photo': request.build_absolute_uri(user_profile.photo.url) if user_profile.photo else None,
-                'year_of_study': user_profile.year_of_study,
-                'graduation_year': user_profile.graduation_year,
-                'projects': user_profile.get_projects(),
-                'skills': user_profile.get_skills()
+    # @swagger_auto_schema(
+    #     tags=["Authentication"],
+    #     operation_description="Retrieve the authenticated user's profile data.",
+    #     response={
+    #         200: openapi.Response(
+    #             description="User profile data retrieved succefully",
+    #             examples={
+    #                 "application/json":{
+    #                     "message":"User Profile data retrieved successfully",
+    #                     "status": "success",
+    #                     "data": {
+    #                         "id": 1,
+    #                         "username": "johndoe",
+    #                         "email": "johndoe@example.com",
+    #                         "first_name": "John",
+    #                         "last_name": "Doe",
+    #                         "course": "Computer Science",
+    #                         "registration_no": "CS2023/1234",
+    #                         "bio": "Software developer passionate about AI.",
+    #                         "tech_stacks": ["Python", "Django", "React"],
+    #                         "social_media": {"linkedin": "https://linkedin.com/in/johndoe"},
+    #                         "photo": "http://localhost:8000/media/photos/johndoe.jpg",
+    #                         "year_of_study": 3,
+    #                         "graduation_year": 2026,
+    #                         "projects": ["AI Chatbot", "E-commerce API"],
+    #                         "skills": ["Machine Learning", "Backend Development"]
+    #                     }
+    #                 }
+    #             }
+    #         ),
+    #         404: openapi.Response(
+    #             description="Profile not found",
+    #             examples={
+    #                 "application/json": {"error": "User profile does not exist"}
+    #             }
+    #         )
+    #     }
+    # )
+    # def get(self,request):
+    #     user = request.user
+    #     try:
+    #         user_profile = UserProfile.objects.get(user=user)
+    #         user_data = {
+    #             'id': user.id,
+    #             'username': user.username,
+    #             'email': user.email,
+    #             'first_name': user.first_name,
+    #             'last_name': user.last_name,
+    #             'course': user_profile.course,
+    #             'registration_no': user_profile.registration_no,
+    #             'bio': user_profile.bio,
+    #             'tech_stacks': user_profile.get_tech_stacks(),
+    #             'social_media': user_profile.get_social_media(),
+    #             'photo': request.build_absolute_uri(user_profile.photo.url) if user_profile.photo else None,
+    #             'year_of_study': user_profile.year_of_study,
+    #             'graduation_year': user_profile.graduation_year,
+    #             'projects': user_profile.get_projects(),
+    #             'skills': user_profile.get_skills()
+    #         }
+    #         return Response({
+    #             "message":"User Profile data retrieved successfully",
+    #             "status":"success",
+    #             "data":user_data
+    #         },status=status.HTTP_200_OK)
+    #     except UserProfile.DoesNotExist:
+    #         return Response({
+    #             "error":"User profile does not exist"
+    #         },status=status.HTTP_404_NOT_FOUND)
+
+    @swagger_auto_schema(
+        tags=["Authentication"],
+        operation_description="Update the authenticated user's profile information. Accepts JSON or multipart/form-data when uploading photo.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'first_name': openapi.Schema(type=openapi.TYPE_STRING, description="First name of the user"),
+                'last_name': openapi.Schema(type=openapi.TYPE_STRING, description="Last name of the user"),
+                'email': openapi.Schema(type=openapi.TYPE_STRING, format="email", description="Email address"),
+                'course': openapi.Schema(type=openapi.TYPE_STRING, description="Course of study"),
+                'registration_no': openapi.Schema(type=openapi.TYPE_STRING, description="Student registration number"),
+                'bio': openapi.Schema(type=openapi.TYPE_STRING, description="Short biography"),
+                'tech_stacks': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Items(type=openapi.TYPE_STRING),
+                                              description="List of technologies"),
+                'social_media': openapi.Schema(type=openapi.TYPE_OBJECT,
+                                               additional_properties=openapi.Items(type=openapi.TYPE_STRING),
+                                               description="Social media links"),
+                'photo': openapi.Schema(type=openapi.TYPE_STRING, format='binary', description="Profile photo upload"),
+                'year_of_study': openapi.Schema(type=openapi.TYPE_INTEGER, description="Current year of study"),
+                'graduation_year': openapi.Schema(type=openapi.TYPE_INTEGER, description="Expected graduation year"),
+                'projects': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Items(type=openapi.TYPE_STRING),
+                                           description="List of projects"),
+                'skills': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Items(type=openapi.TYPE_STRING),
+                                         description="List of skills"),
             }
-            return Response({
-                "message":"User Profile data retrieved successfully",
-                "status":"success",
-                "data":user_data
-            },status=status.HTTP_200_OK)
-        except UserProfile.DoesNotExist:
-            return Response({
-                "error":"User profile does not exist"
-            },status=status.HTTP_404_NOT_FOUND)
-        
+        ),
+        responses={
+            200: openapi.Response(
+                description="Profile updated successfully.",
+                examples={
+                    "application/json":{
+                        "message":"User profile updated successfully",
+                        "status": "success",
+                        "data": {
+                            "id": 1,
+                            "username": "johndoe",
+                            "email": "johndoe@example.com",
+                            "first_name": "John",
+                            "last_name": "Doe",
+                            "course": "Computer Science",
+                            "registration_no": "CS2023/1234",
+                            "bio": "Updated bio here.",
+                            "tech_stacks": ["Python", "Django", "React", "Docker"],
+                            "social_media": {"github": "https://github.com/johndoe"},
+                            "photo": "http://localhost:8000/media/photos/johndoe_new.jpg",
+                            "year_of_study": 4,
+                            "graduation_year": 2025,
+                            "projects": ["AI Chatbot", "New Blockchain App"],
+                            "skills": ["Backend", "DevOps"]
+                        }
+                    }
+                }
+            ),
+            404: openapi.Response(
+                description="Profile not found.",
+                examples={
+                    "application/json": {"error": "User profile does not exist"}
+                }
+            ),
+        }
+    )
     def put(self,request):
         user = request.user
         try:
@@ -602,34 +784,21 @@ class UserProfileUpdateView(APIView):
             return Response({
                 "error":"User profile does not exist"
             },status=status.HTTP_404_NOT_FOUND)
+
+    @swagger_auto_schema(
+        operation_description="Partially update the authenticated user's profile (same fields as PUT, but not all required).",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            additional_properties=openapi.Items(type=openapi.TYPE_STRING),
+            description="Any subset of profile fields to update"
+        ),
+        responses={200: "Partial update successful"}
+    )
     def patch(self,request):
         return self.put(request)
     
 
 
-class CustomTokenRefreshView(TokenRefreshView):
-    def post(self,request,*args,**kwargs):
-        try:
-            old_refresh_token = RefreshToken(request.data['refresh'])
-            user = User.objects.get(id=old_refresh_token['user_id'])
-            new_refresh = RefreshToken.for_user(user)
-            new_refresh = RefreshToken.for_user(user)
-            return Response({
-                'message':'User logged in',
-                'status':'success',
-                'data':{
-                    'access':str(new_refresh.access_token),
-                    'refresh':str(new_refresh)
-                }
-            },status=status.HTTP_200_OK)
-        except Exception as e:
-            print(f"Error:{str(e)}")
-            print(traceback.format_exc())
-            return Response({
-                'message':'User not logged in',
-                'status':'error',
-                'data':None
-            },status=status.HTTP_401_UNAUTHORIZED)
         
 
 class UsersPagination(PageNumberPagination):
@@ -640,6 +809,52 @@ class UsersPagination(PageNumberPagination):
 class AllUsersView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(
+        tags=["Authentication"],
+        operation_description="Retrieve all users with there basic profile details (paginated).",
+        responses={
+            200: openapi.Response(
+                description="List of all users retrieved successfully",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "message":openapi.Schema(type=openapi.TYPE_STRING,example="All users retrieved successfully"),
+                        "status":openapi.Schema(type=openapi.TYPE_STRING,example="success"),
+                        "data":openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                "count":openapi.Schema(type=openapi.TYPE_INTEGER,example=25),
+                                "next":openapi.Schema(type=openapi.TYPE_STRING,format=openapi.FORMAT_URI,example="http://api.example.com/users/?page=2"),
+                                "previous": openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_URI,example=None),
+                                "result":openapi.Schema(
+                                    type=openapi.TYPE_ARRAY,
+                                    items=openapi.Schema(
+                                        type=openapi.TYPE_OBJECT,
+                                        properties={
+                                            "id": openapi.Schema(type=openapi.TYPE_INTEGER, example=1),
+                                            "username": openapi.Schema(type=openapi.TYPE_STRING, example="john_doe"),
+                                            "email": openapi.Schema(type=openapi.TYPE_STRING,example="john@example.com"),
+                                            "first_name": openapi.Schema(type=openapi.TYPE_STRING, example="John"),
+                                            "last_name": openapi.Schema(type=openapi.TYPE_STRING, example="Doe"),
+                                            "course": openapi.Schema(type=openapi.TYPE_STRING,example="Computer Science"),
+                                            "photo": openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_URI,example="http://api.example.com/media/photos/john.jpg")
+                                        }
+                                    )
+                                ),
+                            },
+                        ),
+
+                    },
+                ),
+            ),
+            500: openapi.Response(
+                description="Internal Server Error",
+                examples={
+                    "application/json":{"error":"error fetching users: Something went wrong"}
+                }
+            )
+        }
+    )
     def get(self,request):
         try:
             users = User.objects.all().prefetch_related(
@@ -674,6 +889,7 @@ class AllUsersView(APIView):
                 'error':f'error fetching users:{str(e)}'
             },status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
 @api_view(['GET'])
 def get_all_users(request):
     users = User.objects.all()
@@ -681,6 +897,22 @@ def get_all_users(request):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 class RequestPasswordResetView(APIView):
+
+    @swagger_auto_schema(
+        tags=["Authentication"],
+        operation_summary="Request Password Reset",
+        operation_description="Send an OTP to the provided email for password reset.",
+        request_body=RequestPasswordResetSerializer,
+        responses={
+            200: openapi.Response(
+                description="OTP successfully sent",
+                examples={
+                    "application/json": {"message": "OTP has been sent to your email."}
+                }
+            ),
+            400: "Invalid request body (e.g. missing/invalid email)"
+        }
+    )
     def post(self,request):
         serializer = RequestPasswordResetSerializer(data=request.data)
         if serializer.is_valid():
@@ -695,6 +927,27 @@ class RequestPasswordResetView(APIView):
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
     
 class ResetPasswordView(APIView):
+
+    @swagger_auto_schema(
+        tags=["Authentication"],
+        operation_summary="Reset Password",
+        operation_description="Reset the password using a verified OTP.",
+        request_body=ResetPasswordSerializer,
+        responses={
+            200: openapi.Response(
+                description="Password reset successful",
+                examples={
+                    "application/json": {"message": "Password reset successfully."}
+                }
+            ),
+            400: openapi.Response(
+                description="No valid OTP or invalid data",
+                examples={
+                    "application/json": {"message": "No valid verified OTP found"}
+                }
+            )
+        }
+    )
     def post(self, request):
         serializer = ResetPasswordSerializer(data=request.data)
         if serializer.is_valid():
@@ -718,6 +971,17 @@ class ResetPasswordView(APIView):
 class DeleteAccountView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(
+        tags=["Authentication"],
+        operation_summary="Delete User Account",
+        operation_description="Delete the authenticated user's account.",
+        responses={
+            204: openapi.Response(
+                description="Account deleted successfully"
+            ),
+            401: "Unauthorized - Authentication required"
+        }
+    )
     def delete(self, request, *args, **kwargs):
         user = request.user
         user.delete()
