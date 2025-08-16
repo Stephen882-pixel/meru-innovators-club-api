@@ -98,20 +98,14 @@ class RegisterView(APIView):
             try:
                 user = serializer.save()
                 
-                # Generate and send OTP for verification
+
                 try:
-                     # Generate a 6-digit OTP
                     otp_code = ''.join(random.choices('0123456789', k=6))
-                    
-                    # Save OTP to database using your existing model fields
                     otp = OTP.objects.create(
                         user=user,
                         otp_code=otp_code,
-                        # expires_at will be set automatically in your save method
                     )
                     send_the_otp_email(user,otp)
-
-                    # self.send_otp_email(user)
                 except Exception as e:
                     return Response({
                         "message": f'Failed to send OTP email: {str(e)}',
@@ -126,7 +120,6 @@ class RegisterView(APIView):
                 }, status=status.HTTP_201_CREATED)
                 
             except IntegrityError as e:
-                # Handle database integrity errors (duplicate username/email)
                 if "username" in str(e).lower():
                     return Response({
                         "message": "Username already exists. Please choose a different username.",
@@ -153,13 +146,11 @@ class RegisterView(APIView):
                     "status": "failed",
                     "data": None
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-        # Handle validation errors
+
         error_details = {}
         for field, errors in serializer.errors.items():
             error_details[field] = str(errors[0]) if errors else "Invalid data"
-        
-        # Check for username and email specific errors
+
         if "username" in error_details and "already exists" in error_details["username"].lower():
             message = "Username already exists. Please choose a different username."
         elif "email" in error_details and "already exists" in error_details["email"].lower():
@@ -262,67 +253,6 @@ class UnifiedOTPVerificationView(APIView):
                 'data': None
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-# New view for resending OTP
-class ResendOTPView(APIView):
-    permission_classes = []
-    authentication_classes = []
-
-    def post(self,request):
-        email = request.data.get('email')
-
-        if not email:
-            return Response({
-                "message":"Email is required",
-                "status":"error",
-                "data":None
-            },status=status.HTTP_400_BAD_REQUEST)
-        try:
-            user = User.objects.get(email=email, is_active=False)
-
-        except User.DoesNotExist:
-            return Response({
-                'message': 'Invalid email or account already verified',
-                'status': 'error',
-                'data': None
-            }, status=status.HTTP_400_BAD_REQUEST)
-        # Generate new OTP and send email
-        try:
-            # Generate a 6-digit OTP
-            otp_code = ''.join(random.choices(string.digits, k=6))
-            
-            # Create or update OTP for user
-            expires_at = timezone.now() + timezone.timedelta(minutes=10)
-            otp_obj, created = OTP.objects.update_or_create(
-                user=user,
-                defaults={
-                    'otp_code': otp_code,
-                    'expires_at': expires_at,
-                    'is_verified': False
-                }
-            )
-
-            send_mail(
-                subject="Email Verification OTP",
-                message=f"Your new verification OTP is: {otp_code}\nThis code will expire in 10 minutes.",
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email],
-                fail_silently=False,
-            )
-            
-            return Response({
-                'message': 'New OTP sent successfully. Please check your email',
-                'status': 'success',
-                'data': None
-            }, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({
-                'message': f'Failed to send OTP: {str(e)}',
-                'status': 'error',
-                'data': None
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-
-
 
 # Helper function for sending email verification
 def send_verification_email(user):
@@ -607,6 +537,7 @@ class ChangePasswordView(APIView):
 class VerifyPasswordChangeView(APIView):
     permission_classes = []
     serializer_class = ChangePasswordSerializer
+
 
     def get(self, request,token):
         try:
