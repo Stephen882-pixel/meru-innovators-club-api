@@ -16,6 +16,25 @@ from datetime import timedelta
 from Innovation_WebApp.Email import send_the_otp_email
 import random
 from django.db.models import Prefetch
+from django.contrib.auth import get_user_model
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import permission_classes
+from .serializers import UserSerializer
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from django.contrib.auth.models import User
+from .models import OTP,PasswordResetSession
+from .serializers import RequestPasswordResetSerializer,VerifyOTPSerializer,ResetPasswordSerializer
+from .utils import generate_otp,send_otp_email
+from django.utils import timezone
+from rest_framework.authtoken.models import Token
+
+
+User = get_user_model()
 
 
 class RegisterView(APIView):
@@ -357,6 +376,15 @@ class LogoutView(APIView):
                 "data":None
             },status=status.HTTP_400_BAD_REQUEST)
 
+from django.core.signing import TimestampSigner,BadSignature
+import uuid
+
+def generate_verification_token_for_password_reset(user):
+    signer = TimestampSigner()
+    token = signer.sign(f"{user.id}:{uuid.uuid4().hex}")
+    print(f"Genereated token:{token}")
+    return token
+
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ChangePasswordSerializer
@@ -442,20 +470,14 @@ class ChangePasswordView(APIView):
             },status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 
-
-        
 import json
 class UserDataView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self,request):
-        # Get the authenticated user
         user = request.user
         try:
-            # fetch user profile details
             user_profile = UserProfile.objects.get(user=user)
-
-            # Return comprehensive user data
             user_data = {
                 'id': user.id,
                 'username': user.username,
@@ -490,12 +512,9 @@ class UserProfileUpdateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self,request):
-        """Get detailed user profile data"""
         user = request.user
         try:
             user_profile = UserProfile.objects.get(user=user)
-
-            # Prepare the response with all available user data
             user_data = {
                 'id': user.id,
                 'username': user.username,
@@ -516,7 +535,7 @@ class UserProfileUpdateView(APIView):
             return Response({
                 "message":"User Profile data retrieved successfully",
                 "status":"success",
-                "data":None
+                "data":user_data
             },status=status.HTTP_200_OK)
         except UserProfile.DoesNotExist:
             return Response({
@@ -524,12 +543,9 @@ class UserProfileUpdateView(APIView):
             },status=status.HTTP_404_NOT_FOUND)
         
     def put(self,request):
-        """update user profile data"""
         user = request.user
         try:
             user_profile = UserProfile.objects.get(user=user)
-
-            # Update User model fields
             if 'first_name' in request.data:
                 user.first_name = request.data['first_name']
             if 'last_name' in request.data:
@@ -537,9 +553,6 @@ class UserProfileUpdateView(APIView):
             if 'email' in request.data:
                 user.email = request.data['email']
             user.save()
-
-
-            # Update UserProfile fields
             if 'course' in request.data:
                 user_profile.course = request.data['course']
             if 'registration_no' in request.data:
@@ -562,8 +575,6 @@ class UserProfileUpdateView(APIView):
                 user_profile.set_skills(request.data['skills'])
                 
             user_profile.save()
-
-            # Return updated user data
             updated_data = {
                 'id': user.id,
                 'username': user.username,
@@ -592,7 +603,6 @@ class UserProfileUpdateView(APIView):
                 "error":"User profile does not exist"
             },status=status.HTTP_404_NOT_FOUND)
     def patch(self,request):
-        """Partial update of user profile (same functionality as PUT for this case)"""
         return self.put(request)
     
 
@@ -627,30 +637,18 @@ class UsersPagination(PageNumberPagination):
     page_size_query_param = 'page_size'
     max_page_size = 100
 
-# Retrieve all users in thee database
 class AllUsersView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self,request):
         try:
-            # get all users with prefeched profiles
             users = User.objects.all().prefetch_related(
                 Prefetch('userprofile',queryset=UserProfile.objects.all(),to_attr='profile')
             )
-
-            # Initialize pagination
             paginator = UsersPagination()
-
-            # paginate the querryset
-
-            page = paginator.paginate_queryset(users,request)
-
-            # process the paginated users
             user_data_list = []
             for user in page:
-                # Check if profile exists using the prefetched data
                 profile = user.profile_cache[0] if hasattr(user,'profile_cache') and user.profile_cache else None
-
                 user_data = {
                     'id':user.id,
                     'username':user.username,
@@ -661,13 +659,11 @@ class AllUsersView(APIView):
                     'photo':request.build_absolute_uri(profile.photo.url) if profile and profile.photo else None,
                 }
                 user_data_list.append(user_data)
-
-            # Return paginated response
             return Response({
                 'message':'All users retrieved successfully',
                 'status':'success',
                 'data':{
-                    'count': paginator.page.paginator.count,  # Total count from paginator
+                    'count': paginator.page.paginator.count,
                     'next':paginator.get_next_link(),
                     'previous':paginator.get_previous_link(),
                     'results':user_data_list
@@ -677,40 +673,12 @@ class AllUsersView(APIView):
             return Response({
                 'error':f'error fetching users:{str(e)}'
             },status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-        
-        
-
-from django.contrib.auth import get_user_model
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import permission_classes
-from .serializers import UserSerializer  # Ensure you have a UserSerializer
-
-User = get_user_model()
 
 @api_view(['GET'])
-# @permission_classes([IsAuthenticated])  # Require authentication to access
 def get_all_users(request):
-    users = User.objects.all()  # Get all users
+    users = User.objects.all()
     serializer = UserSerializer(users, many=True)  # Serialize users
     return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-
-# forgot password view
-
-from rest_framework import status
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from django.contrib.auth.models import User
-from .models import OTP,PasswordResetSession
-from .serializers import RequestPasswordResetSerializer,VerifyOTPSerializer,ResetPasswordSerializer
-from .utils import generate_otp,send_otp_email
-from django.utils import timezone
-from rest_framework.authtoken.models import Token
 
 class RequestPasswordResetView(APIView):
     def post(self,request):
@@ -718,20 +686,10 @@ class RequestPasswordResetView(APIView):
         if serializer.is_valid():
             email = serializer.validated_data['email']
             user = User.objects.get(email=email)
-
-
-            # Invalidate any existing OTPs for this user
             OTP.objects.filter(user=user,is_verified=False).update(expires_at=timezone.now())
-
-
-            # Generate and save a neww otp
             otp_code = generate_otp()
             OTP.objects.create(user=user,otp_code=otp_code)
-
-
-            # Send otp email
             send_otp_email(user,otp_code)
-
 
             return Response({"message":"OTP has been sent to your email."},status=status.HTTP_200_OK)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
@@ -744,55 +702,23 @@ class ResetPasswordView(APIView):
             new_password = serializer.validated_data['new_password']
 
             user = User.objects.get(email=email)
-            # Check for a recently verified OTP
             otp = OTP.objects.filter(
                 user=user,
-                is_verified=True  # Assumes OTP was marked verified in VerifyOTPView
+                is_verified=True
             ).order_by('-created_at').first()
 
-            if otp and otp.is_valid():  # Ensure OTP is still valid (not expired)
+            if otp and otp.is_valid():
                 user.set_password(new_password)
                 user.save()
-                otp.delete()  # Clean up the OTP after use
+                otp.delete()
                 return Response({"message": "Password reset successfully."}, status=status.HTTP_200_OK)
             return Response({"message": "No valid verified OTP found"}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-# google oauth 
-User = get_user_model()
-
-# @api_view(['GET'])
-# # @permission_classes([IsAuthenticated])  # Ensure authentication is required
-# def get_all_users(request):
-#     try:
-#         users = User.objects.all()  # Get all users
-        
-#         # Initialize the pagination class
-#         paginator = UsersPagination()
-        
-#         # Paginate the queryset
-#         paginated_users = paginator.paginate_queryset(users, request)
-        
-#         # Serialize the paginated data
-#         serializer = UserSerializer(paginated_users, many=True)
-        
-#         # Return the paginated response
-#         return paginator.get_paginated_ressponse(serializer.data)
-#     except Exception as e:
-#         print(f"Pagination error: {str(e)}")
-#         # Fallback to non-paginated response
-#         serializer = UserSerializer(users, many=True)
-#         return Response({
-#             'message': 'All users retrieved successully',
-#             'status': 'success',
-#             'data': serializer.data
-#         }, status=status.HTTP_200_OK)
 
 class DeleteAccountView(APIView):
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, *args, **kwargs):
-        # Delete the authenticated user's account
         user = request.user
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
