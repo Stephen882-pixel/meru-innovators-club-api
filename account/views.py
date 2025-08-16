@@ -1,53 +1,20 @@
 from tokenize import TokenError
-from venv import logger
-import logging
-from django.contrib.auth import authenticate
-from django.utils.decorators import method_decorator
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.views import APIView
-from rest_framework.response import Response
-
 from rest_framework.pagination import PageNumberPagination
-
 from account.models import PasswordResetRequest
 from .serializers import RegisterSerializer, LoginSerializer,ChangePasswordSerializer,status
-from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.tokens import RefreshToken
-from account import serializers
 from django.db import IntegrityError
-
-import secrets
-from django.core.mail import send_mail
-from django.urls import reverse
-from django.utils import timezone
-from django.conf import settings
-from django.contrib.auth.models import User
 from.models import UserProfile
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
-from rest_framework.exceptions import ValidationError
-
-
-# Create your views here.
-from django.core.mail import send_mail
-from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.conf import settings
-
-
-import jwt
 from rest_framework import status
-from django.http import HttpResponse
 from rest_framework_simplejwt.views import TokenRefreshView
 import traceback
 from datetime import timedelta
 from Innovation_WebApp.Email import send_the_otp_email
 import random
-import string
-
 from django.db.models import Prefetch
 
 
@@ -93,12 +60,9 @@ class RegisterView(APIView):
     )
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
-
         if serializer.is_valid():
             try:
                 user = serializer.save()
-                
-
                 try:
                     otp_code = ''.join(random.choices('0123456789', k=6))
                     otp = OTP.objects.create(
@@ -118,7 +82,6 @@ class RegisterView(APIView):
                     "status": "success",
                     "user_data": None
                 }, status=status.HTTP_201_CREATED)
-                
             except IntegrityError as e:
                 if "username" in str(e).lower():
                     return Response({
@@ -166,7 +129,6 @@ class RegisterView(APIView):
         }, status=status.HTTP_400_BAD_REQUEST)
     
 
-
 class UnifiedOTPVerificationView(APIView):
     permission_classes = []
     authentication_classes = []
@@ -181,23 +143,16 @@ class UnifiedOTPVerificationView(APIView):
                 "status": "error",
                 "data": None
             }, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Try to find the user
         try:
             user = User.objects.get(email=email)
-            # Auto-detect verification type based on user's active status
             verification_type = 'registration' if not user.is_active else 'password_reset'
-            
         except User.DoesNotExist:
             return Response({
                 "message": "User not found",
                 "status": "error",
                 "data": None
             }, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Get and verify OTP
         try:
-            # Get the most recent unverified OTP for the user
             otp_obj = OTP.objects.filter(
                 user=user,
                 is_verified=False
@@ -209,8 +164,7 @@ class UnifiedOTPVerificationView(APIView):
                     'status': 'error',
                     'data': None
                 }, status=status.HTTP_400_BAD_REQUEST)
-                
-            # Check if OTP is valid and matches
+
             if not otp_obj.is_valid():
                 return Response({
                     'message': 'OTP has expired. Please request a new one',
@@ -224,12 +178,8 @@ class UnifiedOTPVerificationView(APIView):
                     'status': 'error',
                     'data': None
                 }, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Mark OTP as verified
             otp_obj.is_verified = True
             otp_obj.save()
-            
-            # For registration: activate the user account
             if verification_type == 'registration':
                 user.is_active = True
                 user.save()
@@ -238,7 +188,6 @@ class UnifiedOTPVerificationView(APIView):
                     "status": 'success',
                     "data": None
                 }, status=status.HTTP_200_OK)
-            # For password reset: just confirm OTP verification
             else:
                 return Response({
                     "message": "OTP verified successfully. You can now reset your password",
@@ -252,9 +201,6 @@ class UnifiedOTPVerificationView(APIView):
                 'status': 'error',
                 'data': None
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-
-
 
 class LoginView(APIView):
     permission_classes = []
@@ -309,7 +255,6 @@ class LoginView(APIView):
             serializer.is_valid(raise_exception=True)
 
             user = serializer.validated_data['user']
-            # check if the user is verified
             if not user.is_active:
                 return Response({
                     'message':'Email not verified.Please verify your email.',
@@ -384,7 +329,6 @@ class LogoutView(APIView):
     )
     def post(self,request):
         try:
-            # Get the refresh tokens from the request body
             refresh_token = request.data.get('refresh_token')
             if not refresh_token:
                 return Response({
@@ -392,8 +336,6 @@ class LogoutView(APIView):
                     "status":"error",
                     "data":None
                 },status=status.HTTP_400_BAD_REQUEST)
-            
-            # Blacklist the refresh token
             token = RefreshToken(refresh_token)
             token.blacklist()
 
@@ -414,13 +356,6 @@ class LogoutView(APIView):
                 "status":"error",
                 "data":None
             },status=status.HTTP_400_BAD_REQUEST)
-            
-
-
-
-from django.core.signing import TimestampSigner,BadSignature
-import uuid
-
 
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
