@@ -254,19 +254,7 @@ class UnifiedOTPVerificationView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 
-# Helper function for sending email verification
-def send_verification_email(user):
-    token = generate_verification_token(user)
 
-    verification_url = f"{settings.FRONTEND_BASE_URL}/verify-email/{token}"
-
-    send_mail(
-        subject="Email Verification",
-        message=f"Please verify your email by clicking this link: {verification_url}",
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[user.email],
-        fail_silently=False,
-    )
 
 def generate_verification_token(user):
     """Generates a JWT token for email verification."""
