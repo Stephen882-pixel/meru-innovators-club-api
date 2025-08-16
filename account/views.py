@@ -256,13 +256,6 @@ class UnifiedOTPVerificationView(APIView):
 
 
 
-def generate_verification_token(user):
-    """Generates a JWT token for email verification."""
-    refresh = RefreshToken.for_user(user)
-    return str(refresh.access_token)
-
-
-
 class LoginView(APIView):
     permission_classes = []
     authentication_classes = []
