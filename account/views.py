@@ -591,24 +591,7 @@ class VerifyPasswordChangeView(APIView):
                 'data':None
             },status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        
-       
-    
-  
-        
-def send_password_change_email(user,token):
-    """"Send email verification for password change"""
-    verification_url = f"{settings.FRONTEND_BASE_URL}/verify-password-change/{token}/"
 
-    send_mail(
-        subject="Verify Password change request",
-        message=f"Please verify your password change request by clicking on this link: {verification_url}",
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[user.email],
-        fail_silently=False
-    )
-
-            
 
         
 import json
