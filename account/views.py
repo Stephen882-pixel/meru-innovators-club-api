@@ -1,17 +1,12 @@
 from tokenize import TokenError
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
 from account.models import PasswordResetRequest
 from .serializers import RegisterSerializer, LoginSerializer,ChangePasswordSerializer,status
-from rest_framework.permissions import IsAuthenticated
 from django.db import IntegrityError
 from.models import UserProfile
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework import status
-from rest_framework_simplejwt.views import TokenRefreshView
-import traceback
 from datetime import timedelta
 from .Email import  send_the_otp_email
 import random

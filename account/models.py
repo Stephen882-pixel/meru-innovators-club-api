@@ -34,7 +34,6 @@ class UserProfile(models.Model):
     social_media = models.TextField(blank=True,null=True)
     photo = models.ImageField(upload_to='profile_photos/',blank=True,null=True)
 
-    #  Additional student-specific fields
     graduation_year = models.PositiveIntegerField(blank=True,null=True)
     projects = models.TextField(blank=True,null=True)
     skills = models.TextField(blank=True,null=True)
