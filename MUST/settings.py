@@ -54,7 +54,7 @@ INSTALLED_APPS = [
     'Club',
     'drf_yasg',
     'events',
-    # 'fcm_django',
+    'communities',
 ]
 
 SITE_ID = 2

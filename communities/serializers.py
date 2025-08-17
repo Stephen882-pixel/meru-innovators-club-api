@@ -1,23 +1,15 @@
-from grpc import Status
 from rest_framework import serializers
-from .models import CommunityMember, SubscribedUsers
-from .models import CommunityProfile, Social_media, CommunitySession
-from Club.models import Club
+from .models import (
+    CommunitySession,
+    CommunityMember,
+    Social_media,
+    CommunityProfile
+)
+from Club.models import ExecutiveMember,Club
 from account.models import User
-from Club.models import ExecutiveMember
 
 
-import logging
 
-logger = logging.getLogger(__name__)
-
-class SubscribedUsersSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = SubscribedUsers
-        fields = ['id', 'email', 'created_date']
-
-
-    
 class CommunitySessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = CommunitySession
@@ -34,17 +26,19 @@ class SocialMediaSerializer(serializers.ModelSerializer):
         model = Social_media
         fields = ['id','platform','url']
 
+
 class CommunityMemberListSerializer(serializers.ModelSerializer):
     joined_date = serializers.DateTimeField(format="%Y-%m-%d", read_only=True)
-    
+
     class Meta:
         model = CommunityMember
         fields = ['id', 'name', 'email', 'joined_date']
         read_only_fields = ['id', 'joined_date']
 
 
-
 DEFAULT_CLUB_ID = 1
+
+
 class CommunityProfileSerializer(serializers.ModelSerializer):
     community_lead = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
@@ -80,18 +74,17 @@ class CommunityProfileSerializer(serializers.ModelSerializer):
     sessions = CommunitySessionSerializer(many=True, required=False)
     members = CommunityMemberListSerializer(many=True, read_only=True)
 
-
     class Meta:
         model = CommunityProfile
         fields = [
             'id', 'name', 'club', 'community_lead', 'co_lead', 'secretary',
             'community_lead_details', 'co_lead_details', 'secretary_details',
             'email', 'phone_number', 'social_media', 'description',
-            'founding_date', 'total_members','members', 'is_recruiting', 'tech_stack',
+            'founding_date', 'total_members', 'members', 'is_recruiting', 'tech_stack',
             'sessions'
         ]
-        read_only_fields = ['id', 'total_members', 'community_lead_details', 
-                           'co_lead_details', 'secretary_details','members']
+        read_only_fields = ['id', 'total_members', 'community_lead_details',
+                            'co_lead_details', 'secretary_details', 'members']
 
     def to_internal_value(self, data):
         raw_data = data.copy()
@@ -168,7 +161,8 @@ class CommunityProfileSerializer(serializers.ModelSerializer):
         return value
 
     def validate_email(self, value):
-        if value and CommunityProfile.objects.filter(email=value).exclude(id=self.instance.id if self.instance else None).exists():
+        if value and CommunityProfile.objects.filter(email=value).exclude(
+                id=self.instance.id if self.instance else None).exists():
             raise serializers.ValidationError("This email is already used by another community.")
         return value
 
@@ -180,47 +174,47 @@ class CommunityProfileSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         social_media_data = validated_data.pop('social_media', [])
         sessions_data = validated_data.pop('sessions', [])
-        
+
         # Convert IDs to User instances for ForeignKey fields
         community_lead = None
         co_lead = None
         secretary = None
-        
+
         if 'community_lead' in validated_data and validated_data['community_lead'] is not None:
             community_lead = User.objects.get(id=validated_data['community_lead'])
             validated_data['community_lead'] = community_lead
-        
+
         if 'co_lead' in validated_data and validated_data['co_lead'] is not None:
             co_lead = User.objects.get(id=validated_data['co_lead'])
             validated_data['co_lead'] = co_lead
-        
+
         if 'secretary' in validated_data and validated_data['secretary'] is not None:
             secretary = User.objects.get(id=validated_data['secretary'])
             validated_data['secretary'] = secretary
-        
+
         # Set default club if not provided
         if 'club' not in validated_data or validated_data['club'] is None:
             validated_data['club'] = Club.objects.get(id=DEFAULT_CLUB_ID)
-        
+
         # Create the CommunityProfile instance
         community = CommunityProfile.objects.create(**validated_data)
-        
+
         # Create executive entries
         if community_lead:
             ExecutiveMember.objects.create(user=community_lead, community=community, position='LEAD')
-        
+
         if co_lead:
             ExecutiveMember.objects.create(user=co_lead, community=community, position='CO_LEAD')
-        
+
         if secretary:
             ExecutiveMember.objects.create(user=secretary, community=community, position='SECRETARY')
-        
+
         # Handle social media
         social_media_instances = [
             Social_media.objects.get_or_create(**sm_data)[0] for sm_data in social_media_data
         ]
         community.social_media.set(social_media_instances)
-        
+
         # Handle sessions
         for session_data in sessions_data:
             session_serializer = CommunitySessionSerializer(data=session_data)
@@ -228,60 +222,60 @@ class CommunityProfileSerializer(serializers.ModelSerializer):
                 session_serializer.save(community=community)
             else:
                 raise serializers.ValidationError(f"Session validation errors: {session_serializer.errors}")
-        
+
         community.update_total_members()
-        
+
         return community
 
     def update(self, instance, validated_data):
         social_media_data = validated_data.pop('social_media', None)
         sessions_data = validated_data.pop('sessions', None)
-        
+
         # Keep track of original executives
         old_community_lead = instance.community_lead
         old_co_lead = instance.co_lead
         old_secretary = instance.secretary
-        
+
         # Convert IDs to User instances for ForeignKey fields
         new_community_lead = None
         new_co_lead = None
         new_secretary = None
-        
+
         if 'community_lead' in validated_data and validated_data['community_lead'] is not None:
             new_community_lead = User.objects.get(id=validated_data['community_lead'])
             validated_data['community_lead'] = new_community_lead
-        
+
         if 'co_lead' in validated_data and validated_data['co_lead'] is not None:
             new_co_lead = User.objects.get(id=validated_data['co_lead'])
             validated_data['co_lead'] = new_co_lead
-        
+
         if 'secretary' in validated_data and validated_data['secretary'] is not None:
             new_secretary = User.objects.get(id=validated_data['secretary'])
             validated_data['secretary'] = new_secretary
-        
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
-        
+
         # Update executives
         if old_community_lead != new_community_lead:
             if old_community_lead:
                 ExecutiveMember.objects.filter(user=old_community_lead, community=instance, position='LEAD').delete()
             if new_community_lead:
                 ExecutiveMember.objects.create(user=new_community_lead, community=instance, position='LEAD')
-        
+
         if old_co_lead != new_co_lead:
             if old_co_lead:
                 ExecutiveMember.objects.filter(user=old_co_lead, community=instance, position='CO_LEAD').delete()
             if new_co_lead:
                 ExecutiveMember.objects.create(user=new_co_lead, community=instance, position='CO_LEAD')
-        
+
         if old_secretary != new_secretary:
             if old_secretary:
                 ExecutiveMember.objects.filter(user=old_secretary, community=instance, position='SECRETARY').delete()
             if new_secretary:
                 ExecutiveMember.objects.create(user=new_secretary, community=instance, position='SECRETARY')
-        
+
         # Handle social media and sessions (existing code remains the same)
         if social_media_data is not None:
             instance.social_media.clear()
@@ -300,9 +294,9 @@ class CommunityProfileSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError(f"Session validation errors: {session_serializer.errors}")
 
         instance.update_total_members()
-        
+
         return instance
-    
+
 class CommunityJoinSerializer(serializers.ModelSerializer):
     class Meta:
         model = CommunityMember

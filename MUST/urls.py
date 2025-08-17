@@ -10,11 +10,6 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView
 )
 from partners.views import PartnerViewSet
-from Innovation_WebApp.views import (
-    CommunityMembersView,
-    CommunityProfileViewSet,
-    JoinCommunityView,
-)
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -31,25 +26,10 @@ schema_view = get_schema_view(
 
 from testimonials.views import TestimonialViewSet
 router = DefaultRouter()
-router.register(r'communities', CommunityProfileViewSet)
 router.register(r'testimonials', TestimonialViewSet)
 router.register(r'partners', PartnerViewSet)
 
 
-community_viewset = CommunityProfileViewSet.as_view({
-    'post':'create',
-    'get':'list',
-})
-
-detail_viewset = CommunityProfileViewSet.as_view({
-    'get':'retrieve',
-    'put':'update',
-    'patch':'update',
-})
-
-search_viewset = CommunityProfileViewSet.as_view({
-    'get':'search_by_name',
-})
 
 
 urlpatterns = [
@@ -73,22 +53,16 @@ urlpatterns = [
     path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     
 
-    path('add-community/', community_viewset, name='add-community'),
-    path('list-communities/', community_viewset, name='list-communities'),
-    path('retrieve-community/<int:pk>/', detail_viewset, name='retrieve-community'),
-    path('update-community/<int:pk>/', detail_viewset, name='update-community'),
-    path('search-community/', search_viewset, name='search-community'),
-    path('communities/<int:pk>/join/', JoinCommunityView.as_view(), name='join-community'),
-    path('communities/<int:pk>/members/', CommunityMembersView.as_view(), name='community_members'),
     path('', include(router.urls)),
     #path('', include(event_router.urls)),
     path('testimonies/', include('testimonials.urls')),
     path('', include('Feedback.urls')),
     path('comments/', include('comments.urls')),
+
+
+
     path('api/', include('Club.urls')),
-
-
-
     path('api/',include('events.urls')),
+    path('api/',include('communities.urls')),
 ]
 
