@@ -37,7 +37,6 @@ def generate_s3_image_url(bucket_name, object_key):
     return f"https://{bucket_name}.s3.ap-southeast-2.amazonaws.com/{object_key}"
 
 
-# this is the event with s3 functionality
 @method_decorator(csrf_exempt, name='dispatch')
 class EventViewSet(viewsets.ModelViewSet):
     queryset = Events.objects.all()
@@ -47,12 +46,9 @@ class EventViewSet(viewsets.ModelViewSet):
 
     @action(methods=['post'], detail=False, url_path='add', url_name='add-event')
     def create_event(self, request, *args, **kwargs):
-        # Debugging output
         print("Files in request:", request.FILES)
         print("Data in request:", request.data)
         print("Content-Type:", request.content_type)
-
-        # Extract form data and handle the file upload
         file = request.FILES.get('image')
         if not file:
             return JsonResponse({
@@ -62,8 +58,6 @@ class EventViewSet(viewsets.ModelViewSet):
 
         bucket_name = settings.AWS_STORAGE_BUCKET_NAME
         object_key = f"event_images/{file.name}"
-
-        # Upload image to S3
         try:
             s3_client.put_object(
                 Bucket=bucket_name,
@@ -77,7 +71,7 @@ class EventViewSet(viewsets.ModelViewSet):
                 "status": "error"
             }, status=500)
 
-        # Create event
+
         event_data = request.data
         event = Events.objects.create(
             name=event_data['name'],
@@ -92,7 +86,6 @@ class EventViewSet(viewsets.ModelViewSet):
             image_url=f"event_images/{file.name}"  # Store the image path in the event
         )
 
-        # Construct the image URL
         image_url = generate_s3_image_url(bucket_name, object_key)
 
         response_data = {
@@ -119,27 +112,22 @@ class EventViewSet(viewsets.ModelViewSet):
     def update_event(self, request, *args, **kwargs):
         partial = kwargs.get('partial', request.method == 'PATCH')
         instance = self.get_object()
-
-        # Handle file upload if image is in the request
         file = request.FILES.get('image')
         if file:
             bucket_name = settings.AWS_STORAGE_BUCKET_NAME
             object_key = f"event_images/{file.name}"
 
             try:
-                # Upload image to S3
                 s3_client.put_object(
                     Bucket=bucket_name,
                     Key=object_key,
                     Body=file.read(),
                     ContentType=file.content_type
                 )
-
-                # Update image_url field in the data
                 mutable_data = request.data.copy()
                 mutable_data['image_url'] = f"event_images/{file.name}"
 
-                # Use modified data for serializer
+
                 serializer = self.get_serializer(instance, data=mutable_data, partial=partial)
             except Exception as e:
                 return Response({
@@ -148,13 +136,10 @@ class EventViewSet(viewsets.ModelViewSet):
                     "data": None
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
-            # No new image, just update other fields
             serializer = self.get_serializer(instance, data=request.data, partial=partial)
 
         if serializer.is_valid():
             event_instance = serializer.save()
-
-            # If image was updated, include the full URL in response
             if file:
                 image_url = generate_s3_image_url(bucket_name, object_key)
                 response_data = EventsSerializer(event_instance).data
@@ -178,8 +163,6 @@ class EventViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='list', url_name='list-events')
     def list_events(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
-
-        # Debug: Print raw image_url values from database
         for event in queryset:
             print(f"Event {event.id} has image_url in DB: {event.image_url}")
 
@@ -187,14 +170,10 @@ class EventViewSet(viewsets.ModelViewSet):
 
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-
-            # Debug: Print serialized data before returning
             for item in serializer.data:
                 print(f"Serialized event {item['id']} has image_url: {item.get('image_url')}")
 
             return self.get_paginated_response(serializer.data)
-
-        # Fallback in case pagination fails or is disabled
         serializer = self.get_serializer(queryset, many=True)
 
         return Response({
@@ -303,8 +282,6 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
                 "status": "failed",
                 "data": None
             }, status=status.HTTP_400_BAD_REQUEST)
-
-        # Get email from request data
         email = request.data.get('email')
         if not email:
             return Response({
@@ -367,7 +344,6 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='user-registrations')
     def get_user_registered_events(self, request):
         try:
-            # Get email from query params
             email = request.query_params.get('email')
             if not email:
                 return Response({
@@ -375,8 +351,6 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
                     'status': 'failed',
                     'data': None
                 }, status=status.HTTP_400_BAD_REQUEST)
-
-            # Get all registrations for this email
             registrations = EventRegistration.objects.filter(email=email)
 
             if not registrations.exists():
@@ -385,8 +359,6 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
                     'status': 'success',
                     'data': []
                 }, status=status.HTTP_200_OK)
-
-            # Serialize the registrations
             serializer = EventRegistrationSerializer(registrations, many=True)
             return Response({
                 'message': 'Registered events retrieved successfully',
@@ -404,15 +376,12 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='user-events/(?P<user_id>\d+)')
     def get_events_by_user_id(self, request, user_id=None, *args, **kwargs):
         try:
-            # Validate user_id is provided
             if not user_id:
                 return Response({
                     'message': 'User ID is required',
                     'status': 'failed',
                     'data': None
                 }, status=status.HTTP_400_BAD_REQUEST)
-
-            # First, get the user's email based on their ID
             try:
                 from django.contrib.auth import get_user_model
                 User = get_user_model()
@@ -424,8 +393,6 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
                     'status': 'failed',
                     'data': None
                 }, status=status.HTTP_404_NOT_FOUND)
-
-            # Now use the email to find all registrations
             registrations = EventRegistration.objects.filter(email=user_email)
 
             if not registrations.exists():
@@ -434,8 +401,6 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
                     'status': 'success',
                     'data': []
                 }, status=status.HTTP_200_OK)
-
-            # Serialize the registrations
             serializer = self.get_serializer(registrations, many=True)
 
             return Response({
@@ -454,15 +419,12 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='my-registrations')
     def get_my_registrations(self, request, *args, **kwargs):
         try:
-            # Ensure user is authenticated
             if not request.user.is_authenticated:
                 return Response({
                     'message': 'Authentication required',
                     'status': 'failed',
                     'data': None
                 }, status=status.HTTP_401_UNAUTHORIZED)
-
-            # Only filter by user, not by email
             registrations = EventRegistration.objects.filter(user=request.user).select_related('event')
 
             if not registrations.exists():
@@ -471,8 +433,6 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
                     'status': 'success',
                     'data': []
                 }, status=status.HTTP_200_OK)
-
-            # Serialize all registrations
             serializer = MyRegistrationSerializer(registrations, many=True)
 
             return Response({
