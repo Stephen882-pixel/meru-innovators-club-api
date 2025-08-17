@@ -422,7 +422,52 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
     queryset = EventRegistration.objects.all()
     serializer_class = EventRegistrationSerializer
 
-
+    @swagger_auto_schema(
+        tags=["Event Registration"],
+        operation_summary="Registers a user for a specific event",
+        operation_description="Registers a user for a specific event",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["email", "full_name", "phone_number", "course", "educational_level"],
+            properties={
+                "email": openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_EMAIL,description="Attendee email"),
+                "full_name": openapi.Schema(type=openapi.TYPE_STRING, description="Full name of the attendee"),
+                "phone_number": openapi.Schema(type=openapi.TYPE_STRING, description="Phone number"),
+                "course": openapi.Schema(type=openapi.TYPE_STRING, description="Course of study"),
+                "educational_level": openapi.Schema(type=openapi.TYPE_STRING, description="Educational level"),
+                "expectations": openapi.Schema(type=openapi.TYPE_STRING, description="Expectations from the event"),
+            }
+        ),
+        responses={
+            200: openapi.Response(
+                description="Successfully registered an event",
+                examples = {
+                    "application/json":{
+                        "message": "successfully registered for the event",
+                        "status": "success",
+                        "data": {
+                            "eventName": "Tech Innovation Summit",
+                            "eventDescription": "A summit on innovation",
+                            "eventLocation": "Meru University Hall",
+                            "eventDate": "2025-09-01T10:00:00Z",
+                            "course": "Computer Science",
+                            "educational_level": "Undergraduate",
+                            "email": "john@example.com",
+                            "event": 1,
+                            "expectations": "Networking and learning",
+                            "full_name": "John Doe",
+                            "phone_number": "+254700000000",
+                            "registration_timestamp": "2025-08-17T12:00:00Z",
+                            "ticket_number": "12345",
+                            "uid": "abc123-uuid"
+                        }
+                    }
+                }
+            ),
+            400: "Bad Request - missing or invalid fields",
+            500: "Internal server error"
+        }
+    )
     def create(self, request, *args, **kwargs):
         event_pk = self.kwargs.get('event_pk')
         if not event_pk:
@@ -489,7 +534,42 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
             'status': 'failed',
             'data': None
         }, status=status.HTTP_400_BAD_REQUEST)
-
+    @swagger_auto_schema(
+        tags=["Event Registration"],
+        method='get',
+        manual_parameters=[
+            openapi.Parameter(
+                'email',
+                openapi.IN_QUERY,
+                description="Email of the user to fetch registered events",
+                type=openapi.TYPE_STRING,
+                required=True
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Registered events retrieved successfully",
+                examples={
+                    "application/json":{
+                        "message":"Registered events retrieved successfully",
+                        "status":"success",
+                        "data":[
+                            {
+                                "id": 1,
+                                "event": 3,
+                                "email": "user@example.com",
+                                "registered_at": "2025-08-17T12:30:00Z"
+                            }
+                        ]
+                    }
+                }
+            ),
+            400: "Email parameter is required",
+            500: "Internal server error"
+        },
+        operation_description="Retrieve all events registered by a user using their email.",
+        operation_summary="Retrieve all events registered by a user using their email."
+    )
     @action(detail=False, methods=['get'], url_path='user-registrations')
     def get_user_registered_events(self, request):
         try:
@@ -522,6 +602,43 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
                 'data': None
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @swagger_auto_schema(
+        tags=["Event Registration"],
+        operation_description="Retrieve all events registered by a user using their User ID.",
+        operation_summary="Retrieve all events registered by a user using their User ID.",
+        method='get',
+        manual_parameters=[
+            openapi.Parameter(
+                'user_id',
+                openapi.IN_PATH,
+                description="ID of the user to fetch event registration",
+                type=openapi.TYPE_INTEGER,
+                required=True
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="User's registration retrieved successfully",
+                examples={
+                    "application/json":{
+                        "message":"User registrations retrieved successfully",
+                        "status":"success",
+                        "data":[
+                            {
+                                "id": 2,
+                                "event": 5,
+                                "email": "user@example.com",
+                                "registered_at": "2025-08-17T12:30:00Z"
+                            }
+                        ]
+                    }
+                }
+            ),
+            404: "User not found",
+            400: "User ID is required",
+            500: "Internal server error"
+        }
+    )
     @action(detail=False, methods=['get'], url_path='user-events/(?P<user_id>\d+)')
     def get_events_by_user_id(self, request, user_id=None, *args, **kwargs):
         try:
@@ -565,6 +682,36 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
                 'data': None
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @swagger_auto_schema(
+        tags=["Event Registration"],
+        operation_description="Retrieve all event registrations for the currently authenticated user.",
+        operation_summary="Retrieve all event registrations for the currently authenticated user.",
+        method='get',
+        responses={
+            200: openapi.Response(
+                description="Authenticated user's event registrations retrieved successfully",
+                examples={
+                    "application/json":{
+                        "message":"Your registered events retrieved successfully",
+                        "status":"success",
+                        "data":[
+                            {
+                                "id":7,
+                                "event":{
+                                    "id":3,
+                                    "title":"Tech Summit",
+                                    "date":"2025-09-01"
+                                },
+                                "registered_at": "2025-08-17T12:30:00Z"
+                            }
+                        ]
+                    }
+                }
+            ),
+            401: "Authentication required",
+            500: "Internal server error"
+        }
+    )
     @action(detail=False, methods=['get'], url_path='my-registrations')
     def get_my_registrations(self, request, *args, **kwargs):
         try:
@@ -603,6 +750,36 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
             return EventRegistration.objects.filter(event_id=event_pk)
         return super().get_queryset()
 
+    @swagger_auto_schema(
+        tags=["Event Registration"],
+        operation_description="List all event registrations. Supports filtering by event ID if `event_pk` is provided in the URL. Results are paginated.",
+        operation_summary="Retrieve all event registrations (with optional event filter)",
+    responses={
+            200: openapi.Response(
+                description="Paginated list of event registrations",
+                examples={
+                    "application/json": {
+                        "message": "Event registrations retrieved successfully",
+                        "status": "success",
+                        "data": {
+                            "count": 25,
+                            "next": "http://api.example.com/events/registrations/?page=2",
+                            "previous": None,
+                            "results": [
+                                {
+                                    "id": 10,
+                                    "event": 3,
+                                    "email": "user@example.com",
+                                    "registered_at": "2025-08-17T12:30:00Z"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ),
+            400: "Error retrieving registrations"
+        }
+    )
     def list(self, request, *args, **kwargs):
         try:
             queryset = self.filter_queryset(self.get_queryset())
@@ -640,6 +817,39 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
                 'data': None
             }, status=status.HTTP_400_BAD_REQUEST)
 
+    @swagger_auto_schema(
+        tags=["Event Registration"],
+        method='get',
+        manual_parameters=[
+            openapi.Parameter(
+                'event_pk',
+                openapi.IN_PATH,
+                description="ID of the event whose registrations should be exported",
+                type=openapi.TYPE_INTEGER,
+                required=True
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="CSV file containing event registrations",
+                examples={
+                    "text/csv": (
+                            "UID,Full Name,Email,Course,Educational Level,Phone Number,Expectations,Registration Date,Ticket Number\n"
+                            "12345,John Doe,john@example.com,Computer Science,Undergraduate,0712345678,"
+                            "Learn more about AI,2025-08-17T12:30:00Z,TK001\n"
+                    )
+                }
+            ),
+            400: "Event ID is required"
+        },
+        operation_description=(
+                "Export all registrations for a given event as a downloadable CSV file.\n\n"
+                "Requires the `event_pk` parameter.\n"
+                "CSV columns include: UID, Full Name, Email, Course, Educational Level, "
+                "Phone Number, Expectations, Registration Date, and Ticket Number."
+        ),
+        operation_summary="Export event registrations as a CSV file"
+    )
     @action(detail=False, methods=['get'], url_path='export')
     def export_registrations(self, request, event_pk=None):
         if not event_pk:
