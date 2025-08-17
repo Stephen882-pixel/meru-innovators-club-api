@@ -1,6 +1,7 @@
 import csv
 import boto3
 from django.db.models import Q
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from .models import Events,EventRegistration
@@ -14,6 +15,7 @@ from django.conf import settings
 s3_client = boto3.client('s3')
 from rest_framework import viewsets,status
 import traceback
+from drf_yasg import openapi
 # Create your views here.
 
 class EventPagination(PageNumberPagination):
@@ -44,6 +46,35 @@ class EventViewSet(viewsets.ModelViewSet):
     pagination_class = EventPagination
     parser_classes = (MultiPartParser, FormParser)
 
+    @swagger_auto_schema(
+        tags=["Events"],
+        method='post',
+        operation_summary="Create a new event",
+        operation_description="Upload an event with details and an image. Image is uploaded to S3 and URL is stored.",
+        manual_parameters=[
+            openapi.Parameter(
+                name="image",
+                in_=openapi.IN_FORM,
+                type=openapi.TYPE_FILE,
+                required=True,
+                description="Event image file"
+            ),
+            openapi.Parameter(name="name", in_=openapi.IN_FORM, type=openapi.TYPE_STRING, required=True,description="Event name"),
+            openapi.Parameter(name="category", in_=openapi.IN_FORM, type=openapi.TYPE_STRING, required=True,description="Event category"),
+            openapi.Parameter(name="title", in_=openapi.IN_FORM, type=openapi.TYPE_STRING, required=True,description="Event title"),
+            openapi.Parameter(name="description", in_=openapi.IN_FORM, type=openapi.TYPE_STRING, required=True,description="Event description"),
+            openapi.Parameter(name="date", in_=openapi.IN_FORM, type=openapi.TYPE_STRING, format="date-time",required=True, description="Event date (ISO format)"),
+            openapi.Parameter(name="location", in_=openapi.IN_FORM, type=openapi.TYPE_STRING, required=True,description="Event location"),
+            openapi.Parameter(name="organizer", in_=openapi.IN_FORM, type=openapi.TYPE_STRING, required=True,description="Organizer name"),
+            openapi.Parameter(name="contact_email", in_=openapi.IN_FORM, type=openapi.TYPE_STRING, format="email",required=True, description="Organizer email"),
+            openapi.Parameter(name="is_virtual", in_=openapi.IN_FORM, type=openapi.TYPE_BOOLEAN, required=True,description="Whether the event is virtual"),
+        ],
+        responses={
+            200: openapi.Response("Event created successfully", EventsSerializer),
+            400: "Bad Request (e.g missing fields, no image)",
+            500: "Server error (e.g upload failed)"
+        }
+    )
     @action(methods=['post'], detail=False, url_path='add', url_name='add-event')
     def create_event(self, request, *args, **kwargs):
         print("Files in request:", request.FILES)
@@ -108,6 +139,21 @@ class EventViewSet(viewsets.ModelViewSet):
 
         return JsonResponse(response_data)
 
+    @swagger_auto_schema(
+        tags=["Events"],
+        methods=["put","patch"],
+        operation_summary="Update an event",
+        operation_description="Update an existing event. You can also upload a new event image which will be stored in AWS S3.",
+        request_body=EventsSerializer,
+        responses={
+            200: openapi.Response(
+                description="Event updated successfully",
+                schema=EventsSerializer
+            ),
+            400: "Invalid input / validation error",
+            500: "Failed to upload image to S3"
+        }
+    )
     @action(methods=['put', 'patch'], detail=True, url_path='update', url_name='update-event')
     def update_event(self, request, *args, **kwargs):
         partial = kwargs.get('partial', request.method == 'PATCH')
@@ -160,6 +206,18 @@ class EventViewSet(viewsets.ModelViewSet):
             'data': None
         }, status=status.HTTP_400_BAD_REQUEST)
 
+    @swagger_auto_schema(
+        tags=["Events"],
+        method='get',
+        operation_summary="Retrieves a list of events",
+        operation_description="Retrieve a list of all events with pagination support. Each event includes image_url (if uploaded).",
+        responses={
+            200: openapi.Response(
+                description="List of events retrieved successfully",
+                schema=EventsSerializer(many=True)
+            ),
+        }
+    )
     @action(detail=False, methods=['get'], url_path='list', url_name='list-events')
     def list_events(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -187,6 +245,34 @@ class EventViewSet(viewsets.ModelViewSet):
             }
         }, status=status.HTTP_200_OK)
 
+    @swagger_auto_schema(
+        tags=["Events"],
+        method='delete',
+        operation_summary="Deletes an event",
+        operation_description="Delete an event by its ID",
+        responses={
+            204: openapi.Response(
+                description="Event deleted successfully",
+                examples={
+                    "application/json":{
+                        "message": "Event deleted successfully",
+                        "status":"success",
+                        "data": None
+                    }
+                }
+            ),
+            400: openapi.Response(
+                description="Error deleting event",
+                examples={
+                    "application/json":{
+                        "message":"Error deleting the event",
+                        "status":"failed",
+                        "data":None
+                    }
+                }
+            ),
+        },
+    )
     @action(detail=True, methods=['delete'], url_path='delete', url_name='delete-event')
     def destroy_event(self, request, *args, **kwargs):
         try:
@@ -204,6 +290,49 @@ class EventViewSet(viewsets.ModelViewSet):
                 'data': None
             }, status=status.HTTP_400_BAD_REQUEST)
 
+    @swagger_auto_schema(
+        tags=["Events"],
+        operation_summary="Retrieves an event with its details",
+        operation_description="Retrieve details of an event by its ID",
+        responses={
+            200: openapi.Response(
+                description="Event details fetched succcessfully",
+                schema=EventsSerializer(),
+                examples={
+                    "application/json":{
+                        "message":"Event details fetched successfully",
+                        "status":"success",
+                        "data":{
+                            "id": 1,
+                            "title": "Sample Event",
+                            "description": "This is a test event",
+                            "date": "2025-08-17T12:00:00Z"
+                        }
+                    }
+                }
+            ),
+            404: openapi.Response(
+                description="Error not found",
+                examples={
+                    "application/json":{
+                        "message":"Event not found",
+                        "status":"failed",
+                        "data":None
+                    }
+                }
+            ),
+            400: openapi.Response(
+                description="Error fetching event",
+                examples={
+                    "application/json":{
+                        "message":"Error fetching event",
+                        "status":"failed",
+                        "data":None
+                    }
+                }
+            ),
+        },
+    )
     @action(detail=True, methods=['get'], url_path='view', url_name='view-event')
     def retrieve_event(self, request, *args, **kwargs):
         try:
@@ -228,6 +357,25 @@ class EventViewSet(viewsets.ModelViewSet):
                 'data': None
             }, status=status.HTTP_400_BAD_REQUEST)
 
+    @swagger_auto_schema(
+        method='get',
+        manual_parameters=[
+            openapi.Parameter(
+                'name',
+                openapi.IN_QUERY,
+                description="Name of the event (exact or partial match)",
+                type=openapi.TYPE_STRING,
+                required=True
+            )
+        ],
+        responses={
+            200: openapi.Response("Event details fetched successfully", EventsSerializer),
+            400: "Bad Request (Missing or invalid parameters)",
+            404: "Event not found"
+        },
+        operation_summary="Get event by name",
+        operation_description="Retrieve an event by its name (case-insensitive search, supports partial match)."
+    )
     @action(detail=False, methods=['get'], url_path='by-name', url_name='event-by-name')
     def get_event_by_name(self, request):
         try:
@@ -273,6 +421,7 @@ class EventViewSet(viewsets.ModelViewSet):
 class EventRegistrationViewSet(viewsets.ModelViewSet):
     queryset = EventRegistration.objects.all()
     serializer_class = EventRegistrationSerializer
+
 
     def create(self, request, *args, **kwargs):
         event_pk = self.kwargs.get('event_pk')

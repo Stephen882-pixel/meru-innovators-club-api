@@ -3,12 +3,12 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.pagination import PageNumberPagination
 from account.models import PasswordResetRequest
-from .serializers import RegisterSerializer, LoginSerializer,ChangePasswordSerializer,status
+from .serializers import RegisterSerializer, LoginSerializer,ChangePasswordSerializer
 from django.db import IntegrityError
 from.models import UserProfile
 from rest_framework_simplejwt.tokens import RefreshToken
 from datetime import timedelta
-from .Email import  send_the_otp_email
+from .Email import send_the_otp_email
 import random
 from django.db.models import Prefetch
 from django.contrib.auth import get_user_model
@@ -19,7 +19,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.contrib.auth.models import User
-from .models import OTP,PasswordResetSession
+from .models import OTP
 from .serializers import RequestPasswordResetSerializer,ResetPasswordSerializer
 from .utils import generate_otp,send_otp_email
 from django.utils import timezone
