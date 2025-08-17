@@ -13,15 +13,12 @@ from rest_framework import status
 from rest_framework_simplejwt.views import TokenRefreshView
 import traceback
 from datetime import timedelta
-from events.Email import send_the_otp_email
+from .Email import  send_the_otp_email
 import random
 from django.db.models import Prefetch
 from django.contrib.auth import get_user_model
 from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import permission_classes
 from .serializers import UserSerializer
 from rest_framework import status
 from rest_framework.response import Response
@@ -31,7 +28,6 @@ from .models import OTP,PasswordResetSession
 from .serializers import RequestPasswordResetSerializer,ResetPasswordSerializer
 from .utils import generate_otp,send_otp_email
 from django.utils import timezone
-from rest_framework.authtoken.models import Token
 
 
 User = get_user_model()

@@ -4,7 +4,6 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework.routers import DefaultRouter
-from rest_framework_nested import routers
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -30,12 +29,8 @@ schema_view = get_schema_view(
 )
 
 
-
-from Feedback import urls
 from testimonials.views import TestimonialViewSet
 router = DefaultRouter()
-# router.register(r'event-registrations', EventRegistrationViewSet, basename='events_registration')
-# router.register(r'events', EventViewSet, basename='events')
 router.register(r'communities', CommunityProfileViewSet)
 router.register(r'testimonials', TestimonialViewSet)
 router.register(r'partners', PartnerViewSet)
@@ -56,8 +51,6 @@ search_viewset = CommunityProfileViewSet.as_view({
     'get':'search_by_name',
 })
 
-# event_router = routers.NestedDefaultRouter(router, r'events', lookup='event')
-# event_router.register(r'registrations', EventRegistrationViewSet, basename='event-registrations')
 
 urlpatterns = [
     path('admin/', admin.site.urls),

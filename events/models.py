@@ -4,8 +4,6 @@ from account.models import User
 import uuid
 
 # Create your models here.
-
-
 class Events(models.Model):
     CATEGORY_CHOICE = [
         ('WEB', 'Web Development'),
@@ -26,8 +24,6 @@ class Events(models.Model):
     organizer = models.CharField(max_length=100)
     contact_email = models.EmailField(null=True, blank=True)
     is_virtual = models.BooleanField(default=False)
-
-    # registration_link = models.URLField(null=True, blank=True)
 
     def __str__(self):
         return self.title
