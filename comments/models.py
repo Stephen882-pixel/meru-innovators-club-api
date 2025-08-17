@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-from Innovation_WebApp.models import Events
+from events.models import Events
 
 class Comment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

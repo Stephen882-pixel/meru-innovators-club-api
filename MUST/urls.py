@@ -12,11 +12,8 @@ from rest_framework_simplejwt.views import (
 )
 from partners.views import PartnerViewSet
 from Innovation_WebApp.views import (
-    CommunityMembersView, 
-    EventRegistrationViewSet,
+    CommunityMembersView,
     CommunityProfileViewSet,
-    EventViewSet,
-    SessionCreateView,
     JoinCommunityView,
 )
 
@@ -37,8 +34,8 @@ schema_view = get_schema_view(
 from Feedback import urls
 from testimonials.views import TestimonialViewSet
 router = DefaultRouter()
-router.register(r'event-registrations', EventRegistrationViewSet, basename='events_registration')
-router.register(r'events', EventViewSet, basename='events')
+# router.register(r'event-registrations', EventRegistrationViewSet, basename='events_registration')
+# router.register(r'events', EventViewSet, basename='events')
 router.register(r'communities', CommunityProfileViewSet)
 router.register(r'testimonials', TestimonialViewSet)
 router.register(r'partners', PartnerViewSet)
@@ -59,8 +56,8 @@ search_viewset = CommunityProfileViewSet.as_view({
     'get':'search_by_name',
 })
 
-event_router = routers.NestedDefaultRouter(router, r'events', lookup='event')
-event_router.register(r'registrations', EventRegistrationViewSet, basename='event-registrations')
+# event_router = routers.NestedDefaultRouter(router, r'events', lookup='event')
+# event_router.register(r'registrations', EventRegistrationViewSet, basename='event-registrations')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -75,7 +72,7 @@ urlpatterns = [
     path('redoc/',
          schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 
-    path('', include('Innovation_WebApp.urls')),
+    #path('', include('Innovation_WebApp.urls')),
     path('api/', include('Api.urls')),
     path('comments/', include('comments.urls')),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
@@ -91,10 +88,14 @@ urlpatterns = [
     path('communities/<int:pk>/join/', JoinCommunityView.as_view(), name='join-community'),
     path('communities/<int:pk>/members/', CommunityMembersView.as_view(), name='community_members'),
     path('', include(router.urls)),
-    path('', include(event_router.urls)),
+    #path('', include(event_router.urls)),
     path('testimonies/', include('testimonials.urls')),
     path('', include('Feedback.urls')),
     path('comments/', include('comments.urls')),
     path('api/', include('Club.urls')),
+
+
+
+    path('api/',include('events.urls')),
 ]
 

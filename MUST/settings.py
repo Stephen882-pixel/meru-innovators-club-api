@@ -52,7 +52,8 @@ INSTALLED_APPS = [
     'testimonials',
     'partners',
     'Club',
-    'drf_yasg'
+    'drf_yasg',
+    'events',
     # 'fcm_django',
 ]
 

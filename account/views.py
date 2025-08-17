@@ -13,7 +13,7 @@ from rest_framework import status
 from rest_framework_simplejwt.views import TokenRefreshView
 import traceback
 from datetime import timedelta
-from Innovation_WebApp.Email import send_the_otp_email
+from events.Email import send_the_otp_email
 import random
 from django.db.models import Prefetch
 from django.contrib.auth import get_user_model
