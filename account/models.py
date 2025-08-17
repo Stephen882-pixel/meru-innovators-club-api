@@ -85,7 +85,6 @@ class OTP(models.Model):
 
     def save(self,*args,**Kwargs):
         if not self.expires_at:
-            # Set expiration time to 10 minutes from creation
             self.expires_at = timezone.now() + timedelta(minutes=10)
         super().save(*args,**Kwargs)
     
@@ -103,7 +102,6 @@ class PasswordResetSession(models.Model):
 
     def save(self,*args,**kwargs):
         if not self.expires_at:
-            # Set expiration time to 10 minutes from creation
             self.expires_at = timezone.now() + timedelta(minutes=10)
         super().save(*args, **kwargs)
 

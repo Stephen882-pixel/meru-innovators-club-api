@@ -28,7 +28,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.contrib.auth.models import User
 from .models import OTP,PasswordResetSession
-from .serializers import RequestPasswordResetSerializer,VerifyOTPSerializer,ResetPasswordSerializer
+from .serializers import RequestPasswordResetSerializer,ResetPasswordSerializer
 from .utils import generate_otp,send_otp_email
 from django.utils import timezone
 from rest_framework.authtoken.models import Token
