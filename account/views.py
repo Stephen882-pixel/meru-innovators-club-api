@@ -853,6 +853,7 @@ class AllUsersView(APIView):
             )
             paginator = UsersPagination()
             user_data_list = []
+
             for user in page:
                 profile = user.profile_cache[0] if hasattr(user,'profile_cache') and user.profile_cache else None
                 user_data = {
