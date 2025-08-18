@@ -47,7 +47,7 @@ class CommunityProfile(models.Model):
 
     email = models.EmailField(blank=True, null=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
-    social_media = models.ManyToManyField('Innovation_WebApp.Social_media', related_name='social_media_communities_from_communities_app')
+    social_media = models.ManyToManyField('communities.Social_media', related_name='social_media_communities_from_communities_app')
     description = models.TextField()
     founding_date = models.DateField(blank=True, null=True)
     total_members = models.IntegerField(default=0)
@@ -80,7 +80,7 @@ class CommunityProfile(models.Model):
     def get_secretary_email(self):
         return self.secretary.email if self.secretary else None
 
-    @receiver([post_save, post_delete], sender='Innovation_WebApp.CommunityMember')
+    @receiver([post_save, post_delete], sender='communities.CommunityMember')
     def update_community_member_count(sender, instance, **kwargs):
         if instance.community:
             instance.community.update_total_members()

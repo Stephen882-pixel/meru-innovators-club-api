@@ -37,8 +37,6 @@ class CommunityMemberListSerializer(serializers.ModelSerializer):
 
 
 DEFAULT_CLUB_ID = 1
-
-
 class CommunityProfileSerializer(serializers.ModelSerializer):
     community_lead = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
@@ -86,21 +84,6 @@ class CommunityProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'total_members', 'community_lead_details',
                             'co_lead_details', 'secretary_details', 'members']
 
-    def to_internal_value(self, data):
-        raw_data = data.copy()
-        validated_data = super().to_internal_value(data)
-        for field in ['community_lead', 'co_lead', 'secretary']:
-            if field in raw_data:
-                value = raw_data[field]
-                if value is not None:
-                    try:
-                        User.objects.get(id=value)
-                        validated_data[field] = value
-                    except User.DoesNotExist:
-                        raise serializers.ValidationError({field: f"Invalid pk '{value}' - object does not exist."})
-                else:
-                    validated_data[field] = None
-        return validated_data
 
     def get_community_lead_details(self, obj):
         if obj.community_lead:
@@ -175,54 +158,84 @@ class CommunityProfileSerializer(serializers.ModelSerializer):
         social_media_data = validated_data.pop('social_media', [])
         sessions_data = validated_data.pop('sessions', [])
 
-        # Convert IDs to User instances for ForeignKey fields
-        community_lead = None
-        co_lead = None
-        secretary = None
-
-        if 'community_lead' in validated_data and validated_data['community_lead'] is not None:
-            community_lead = User.objects.get(id=validated_data['community_lead'])
-            validated_data['community_lead'] = community_lead
-
-        if 'co_lead' in validated_data and validated_data['co_lead'] is not None:
-            co_lead = User.objects.get(id=validated_data['co_lead'])
-            validated_data['co_lead'] = co_lead
-
-        if 'secretary' in validated_data and validated_data['secretary'] is not None:
-            secretary = User.objects.get(id=validated_data['secretary'])
-            validated_data['secretary'] = secretary
+        # Extract user instances for executives
+        community_lead = validated_data.pop('community_lead', None)
+        co_lead = validated_data.pop('co_lead', None)
+        secretary = validated_data.pop('secretary', None)
 
         # Set default club if not provided
         if 'club' not in validated_data or validated_data['club'] is None:
             validated_data['club'] = Club.objects.get(id=DEFAULT_CLUB_ID)
 
-        # Create the CommunityProfile instance
+        # Create the CommunityProfile instance first
         community = CommunityProfile.objects.create(**validated_data)
 
+        # Ensure the community is properly saved before creating related objects
+        community.refresh_from_db()
+
         # Create executive entries
-        if community_lead:
-            ExecutiveMember.objects.create(user=community_lead, community=community, position='LEAD')
+        try:
+            print(f"Community ID after creation: {community.id}")
+            print(f"Community club: {community.club}")
 
-        if co_lead:
-            ExecutiveMember.objects.create(user=co_lead, community=community, position='CO_LEAD')
+            if community_lead:
+                print(f"Creating LEAD executive for user: {community_lead}")
+                ExecutiveMember.objects.create(
+                    user=community_lead,
+                    community=community,
+                    position='LEAD'
+                )
+            if co_lead:
+                print(f"Creating CO_LEAD executive for user: {co_lead}")
+                ExecutiveMember.objects.create(
+                    user=co_lead,
+                    community=community,
+                    position='CO_LEAD'
+                )
+            if secretary:
+                print(f"Creating SECRETARY executive for user: {secretary}")
+                ExecutiveMember.objects.create(
+                    user=secretary,
+                    community=community,
+                    position='SECRETARY'
+                )
+        except Exception as e:
+            # If executive creation fails, delete the community and re-raise
+            community.delete()
+            raise serializers.ValidationError(f"Error creating executives: {str(e)}")
 
-        if secretary:
-            ExecutiveMember.objects.create(user=secretary, community=community, position='SECRETARY')
+        # Handle social media - create instances directly since data is already validated
+        try:
+            social_media_instances = []
+            for sm_data in social_media_data:
+                # Create Social_media instance directly
+                sm_instance, created = Social_media.objects.get_or_create(
+                    platform=sm_data['platform'],
+                    url=sm_data['url']
+                )
+                social_media_instances.append(sm_instance)
+            community.social_media.set(social_media_instances)
+        except Exception as e:
+            community.delete()
+            raise serializers.ValidationError(f"Error creating social media: {str(e)}")
 
-        # Handle social media
-        social_media_instances = [
-            Social_media.objects.get_or_create(**sm_data)[0] for sm_data in social_media_data
-        ]
-        community.social_media.set(social_media_instances)
+        # Handle sessions - create CommunitySession instances directly
+        try:
+            for session_data in sessions_data:
+                # Create session directly since data is already validated
+                CommunitySession.objects.create(
+                    community=community,
+                    day=session_data['day'],
+                    start_time=session_data['start_time'],
+                    end_time=session_data['end_time'],
+                    meeting_type=session_data['meeting_type'],
+                    location=session_data.get('location')  # Use .get() to handle optional field
+                )
+        except Exception as e:
+            community.delete()
+            raise serializers.ValidationError(f"Error creating sessions: {str(e)}")
 
-        # Handle sessions
-        for session_data in sessions_data:
-            session_serializer = CommunitySessionSerializer(data=session_data)
-            if session_serializer.is_valid():
-                session_serializer.save(community=community)
-            else:
-                raise serializers.ValidationError(f"Session validation errors: {session_serializer.errors}")
-
+        # Update total members count
         community.update_total_members()
 
         return community

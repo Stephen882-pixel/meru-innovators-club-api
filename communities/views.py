@@ -22,42 +22,37 @@ class CommunityProfileViewSet(viewsets.ModelViewSet):
             with transaction.atomic():
                 serializer = self.get_serializer(data=request.data)
                 print(f"View - Initial data: {serializer.initial_data}")
+
                 if serializer.is_valid():
                     print(f"View - Validated data: {serializer.validated_data}")
 
-                    # Validate executive conflicts using IDs
+                    # Check if any executives are already assigned to other communities
                     community_lead_id = serializer.validated_data.get('community_lead')
                     co_lead_id = serializer.validated_data.get('co_lead')
                     secretary_id = serializer.validated_data.get('secretary')
 
-                    # Check if any of the users are already executives
-                    if community_lead_id:
-                        community_lead = get_object_or_404(User, id=community_lead_id)
-                        if ExecutiveMember.objects.filter(user=community_lead).exists():
-                            return Response({
-                                'message': f'User {community_lead.email} is already an executive in another community',
-                                'status': 'failed',
-                                'data': None
-                            }, status=status.HTTP_400_BAD_REQUEST)
+                    if community_lead_id and ExecutiveMember.objects.filter(user=community_lead_id).exists():
+                        return Response({
+                            'message': f'User {community_lead_id.email} is already an executive in another community',
+                            'status': 'failed',
+                            'data': None
+                        }, status=status.HTTP_400_BAD_REQUEST)
 
-                    if co_lead_id:
-                        co_lead = get_object_or_404(User, id=co_lead_id)
-                        if ExecutiveMember.objects.filter(user=co_lead).exists():
-                            return Response({
-                                'message': f'User {co_lead.email} is already an executive in another community',
-                                'status': 'failed',
-                                'data': None
-                            }, status=status.HTTP_400_BAD_REQUEST)
+                    if co_lead_id and ExecutiveMember.objects.filter(user=co_lead_id).exists():
+                        return Response({
+                            'message': f'User {co_lead_id.email} is already an executive in another community',
+                            'status': 'failed',
+                            'data': None
+                        }, status=status.HTTP_400_BAD_REQUEST)
 
-                    if secretary_id:
-                        secretary = get_object_or_404(User, id=secretary_id)
-                        if ExecutiveMember.objects.filter(user=secretary).exists():
-                            return Response({
-                                'message': f'User {secretary.email} is already an executive in another community',
-                                'status': 'failed',
-                                'data': None
-                            }, status=status.HTTP_400_BAD_REQUEST)
+                    if secretary_id and ExecutiveMember.objects.filter(user=secretary_id).exists():
+                        return Response({
+                            'message': f'User {secretary_id.email} is already an executive in another community',
+                            'status': 'failed',
+                            'data': None
+                        }, status=status.HTTP_400_BAD_REQUEST)
 
+                    # Let the serializer handle the creation
                     community = serializer.save()
                     print(f"View - Community created: {community}")
 
@@ -85,8 +80,6 @@ class CommunityProfileViewSet(viewsets.ModelViewSet):
                 'data': None
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    def perform_create(self, serializer):
-        serializer.save()
 
     def update(self, request, *args, **kwargs):
         try:
