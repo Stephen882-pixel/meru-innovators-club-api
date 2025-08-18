@@ -23,7 +23,6 @@ class CommunityProfile(models.Model):
     name = models.CharField(max_length=200)
     club = models.ForeignKey('Club.Club', related_name='communities_from_communities_app', on_delete=models.CASCADE)
 
-    # Updated ForeignKey fields to reference User model explicitly
     community_lead = models.ForeignKey(
         User,
         related_name='lead_communities_from_communities_app',
@@ -56,18 +55,12 @@ class CommunityProfile(models.Model):
     tech_stack = models.JSONField(blank=True, null=True)
 
     def update_total_members(self):
-        """
-        Update the total_members count based on related CommunityMember objects
-        """
-        current_count = self.members.count()  # Assumes a related_name='members' exists
+        current_count = self.members.count()
         if self.total_members != current_count:
             self.total_members = current_count
             CommunityProfile.objects.filter(id=self.id).update(total_members=current_count)
 
     def save(self, *args, **kwargs):
-        """
-        Override save to handle initial member count update
-        """
         super().save(*args, **kwargs)
         if 'update_fields' not in kwargs or 'total_members' not in kwargs.get('update_fields', []):
             self.update_total_members()
@@ -76,10 +69,7 @@ class CommunityProfile(models.Model):
         return self.name
 
     def get_sessions(self):
-        """
-        Return all related sessions
-        """
-        return self.sessions.all()  # Assumes a related_name='sessions' exists
+        return self.sessions.all()
 
     def get_lead_email(self):
         return self.community_lead.email if self.community_lead else None
@@ -90,12 +80,8 @@ class CommunityProfile(models.Model):
     def get_secretary_email(self):
         return self.secretary.email if self.secretary else None
 
-    # Signal handler should be outside the class
     @receiver([post_save, post_delete], sender='Innovation_WebApp.CommunityMember')
     def update_community_member_count(sender, instance, **kwargs):
-        """
-        Update member count when CommunityMember is added or removed
-        """
         if instance.community:
             instance.community.update_total_members()
 
@@ -124,7 +110,7 @@ class CommunitySession(models.Model):
 class CommunityMember(models.Model):
     community = models.ForeignKey(
         'CommunityProfile',
-        related_name='members',  # This related_name is important
+        related_name='members',
         on_delete=models.CASCADE
     )
     name = models.CharField(max_length=100)
@@ -132,7 +118,7 @@ class CommunityMember(models.Model):
     joined_date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ['community', 'email']  # Prevents duplicate memberships
+        unique_together = ['community', 'email']
 
     def __str__(self):
         return f"{self.name} - {self.community.name}"
