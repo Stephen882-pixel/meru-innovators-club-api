@@ -1,3 +1,4 @@
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.views import APIView
 from .models import CommunityProfile,CommunityMember
 from .serializers import CommunityProfileSerializer,CommunityJoinSerializer,CommunityMemberListSerializer
@@ -6,6 +7,8 @@ from Club.models import ExecutiveMember
 from rest_framework.response import Response
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 # Create your views here.
 
 
@@ -14,6 +17,57 @@ class CommunityProfileViewSet(viewsets.ModelViewSet):
     queryset = CommunityProfile.objects.all().order_by('id')
     serializer_class = CommunityProfileSerializer
 
+    @swagger_auto_schema(
+        tags=["Communities"],
+        operation_summary="Create a new Community profile",
+        operation_description="""
+        Creates a new community profile for the Meru University Science Innovators Club.  
+        Restrictions:
+        - A user cannot serve as `community_lead`, `co_lead`, or `secretary` if they are already an executive in another community.
+        """,
+        request_body=CommunityProfileSerializer,
+        responses={
+            200: openapi.Response(
+                description="Community created successfully",
+                examples={
+                    "application/json":{
+                        "message":"community created successfully",
+                        "status":"success",
+                        "data":{
+                            "id": 1,
+                            "name": "Cybersecurity Community",
+                            "community_lead": 3,
+                            "co_lead": 4,
+                            "secretary": 5,
+                            "email": "cybersec@example.com",
+                            "phone_number": "0700123456",
+                            "tech_stack": ["Python", "Django", "React"]
+                        }
+                    }
+                }
+            ),
+            400: openapi.Response(
+                description="Validation error or user already an executive",
+                examples={
+                    "application/json":{
+                        "message":"User john@example.com is already an executive in another community",
+                        "status":"failed",
+                        "data":None
+                    }
+                }
+            ),
+            500: openapi.Response(
+                description="server error",
+                examples={
+                    "application/json":{
+                        "message":"Error creating community: Internal server error",
+                        "status":"failed",
+                        "data":None
+                    }
+                }
+            )
+        }
+    )
     def create(self, request, *args, **kwargs):
         print(f"View - Request data: {request.data}")
         try:
@@ -73,7 +127,59 @@ class CommunityProfileViewSet(viewsets.ModelViewSet):
                 'status': 'failed',
                 'data': None
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+    @swagger_auto_schema(
+        tags=["Communities"],
+        operation_summary="update a community profile",
+        operation_description="""
+        Updates an existing community profile.  
+        Notes:
+        - Supports **partial updates** (you don’t need to send all fields).  
+        - Restrictions:  
+            * `community_lead`, `co_lead`, or `secretary` cannot be reassigned to users who are already executives in another community.
+        """,
+        request_body=CommunityProfileSerializer,
+        responses={
+            200: openapi.Response(
+                description="Community updated successfully",
+                examples={
+                    "application/json":{
+                        "message":"community updated successfully",
+                        "status":"success",
+                        "data":{
+                            "id": 1,
+                            "name": "AI & Data Science Community",
+                            "community_lead": 6,
+                            "co_lead": 7,
+                            "secretary": 8,
+                            "email": "aids@example.com",
+                            "phone_number": "0712345678",
+                            "tech_stack": ["Python", "TensorFlow", "Pandas"]
+                        }
+                    }
+                }
+            ),
+            400: openapi.Response(
+                description="Validation error or executive role conflict",
+                examples={
+                    "application/json":{
+                        "message":"User jane@example.com is already an executive in another community",
+                        "status":"failed",
+                        "data":None
+                    }
+                }
+            ),
+            500: openapi.Response(
+                description="Server error",
+                examples={
+                    "application/json":{
+                        "message":"server error",
+                        "status":"failed",
+                        "data":None
+                    }
+                }
+            )
+        }
+    )
     def update(self, request, *args, **kwargs):
         try:
             with transaction.atomic():
@@ -131,7 +237,71 @@ class CommunityProfileViewSet(viewsets.ModelViewSet):
                 'status': 'failed',
                 'data': None
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+    @swagger_auto_schema(
+        tags=["Communities"],
+        operation_summary="Retrieve all community profiles",
+        operation_description="""
+        Returns a list of all community profiles.  
+        - Supports pagination (`limit` & `offset` if pagination is enabled).  
+        - Response includes metadata such as `count`, `next`, and `previous` when paginated.  
+        """,
+        manual_parameters=[
+            openapi.Parameter(
+                "page",openapi.IN_QUERY,description="Page number for paginated results",type=openapi.TYPE_INTEGER,
+            ),
+            openapi.Parameter(
+                "page_size", openapi.IN_QUERY, description="Number of results per page", type=openapi.TYPE_INTEGER
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="List of communities retrieved successfully",
+                examples={
+                    "application/json":{
+                        "message":"Communities retrieved successfully",
+                        "status":"success",
+                        "data":{
+                            "count":2,
+                            "next":"http://localhost:8000/api/communities/?page=2",
+                            "previous":None,
+                            "results":[
+                                {
+                                    "id": 1,
+                                    "name": "Cybersecurity Community",
+                                    "community_lead": 3,
+                                    "co_lead": 4,
+                                    "secretary": 5,
+                                    "email": "cybersec@example.com",
+                                    "phone_number": "0700123456",
+                                    "tech_stack": ["Python", "Django"]
+                                },
+                                {
+                                    "id": 2,
+                                    "name": "AI & Data Science Community",
+                                    "community_lead": 6,
+                                    "co_lead": 7,
+                                    "secretary": 8,
+                                    "email": "aids@example.com",
+                                    "phone_number": "0712345678",
+                                    "tech_stack": ["TensorFlow", "Pandas"]
+                                }
+                            ]
+                        }
+                    }
+                }
+            ),
+            400: openapi.Response(
+                description="Error retrieving communities",
+                examples={
+                    "application/json":{
+                        "message":"Error retrieving communities",
+                        "status":"failed",
+                        "data":None
+                    }
+                }
+            )
+        }
+    )
     def list(self, request, *args, **kwargs):
         try:
             queryset = self.filter_queryset(self.get_queryset())
@@ -163,7 +333,54 @@ class CommunityProfileViewSet(viewsets.ModelViewSet):
                 'status': 'failed',
                 'data': None
             }, status=status.HTTP_400_BAD_REQUEST)
-
+    @swagger_auto_schema(
+        tags=["communities"],
+        operation_summary="Retrieve a single community profile",
+        operation_description="""
+        Retrieves details of a specific community profile by its **ID**.  
+        If the given ID does not exist, a `Community not found` error will be returned. 
+        """,
+        manual_parameters=[
+            openapi.Parameter(
+                "id",
+                openapi.IN_PATH,
+                description="Unique ID of the community profile",
+                type=openapi.TYPE_INTEGER,
+                required=True,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Community retrieved successfully",
+                examples={
+                    "application/json":{
+                        "message":"Community retrieved successfully",
+                        "status":"success",
+                        "data":{
+                            "id": 1,
+                            "name": "Cybersecurity Community",
+                            "community_lead": 3,
+                            "co_lead": 4,
+                            "secretary": 5,
+                            "email": "cybersec@example.com",
+                            "phone_number": "0700123456",
+                            "tech_stack": ["Python", "Django"]
+                        }
+                    }
+                }
+            ),
+            400: openapi.Response(
+                description="community not found",
+                examples={
+                    "application/json":{
+                        "message":"community not found",
+                        "status":"failed",
+                        "data":None
+                    }
+                }
+            )
+        }
+    )
     def retrieve(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
