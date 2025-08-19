@@ -45,7 +45,7 @@ urlpatterns = [
     path('redoc/',
          schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 
-    #path('', include('Innovation_WebApp.urls')),
+
     path('api/', include('Api.urls')),
     path('comments/', include('comments.urls')),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
