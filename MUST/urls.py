@@ -27,10 +27,6 @@ schema_view = get_schema_view(
 from testimonials.views import TestimonialViewSet
 router = DefaultRouter()
 router.register(r'testimonials', TestimonialViewSet)
-router.register(r'partners', PartnerViewSet)
-
-
-
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -65,5 +61,6 @@ urlpatterns = [
     path('api/',include('communities.urls')),
     path('api/',include('communications.urls')),
     path('api/', include('feedback.urls')),
+    path('api/', include('partners.urls')),
 ]
 
