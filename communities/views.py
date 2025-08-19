@@ -23,8 +23,6 @@ class CommunityProfileViewSet(viewsets.ModelViewSet):
 
                 if serializer.is_valid():
                     print(f"View - Validated data: {serializer.validated_data}")
-
-                    # Check if any executives are already assigned to other communities
                     community_lead_id = serializer.validated_data.get('community_lead')
                     co_lead_id = serializer.validated_data.get('co_lead')
                     secretary_id = serializer.validated_data.get('secretary')
@@ -49,8 +47,6 @@ class CommunityProfileViewSet(viewsets.ModelViewSet):
                             'status': 'failed',
                             'data': None
                         }, status=status.HTTP_400_BAD_REQUEST)
-
-                    # Let the serializer handle the creation
                     community = serializer.save()
                     print(f"View - Community created: {community}")
 
@@ -85,12 +81,9 @@ class CommunityProfileViewSet(viewsets.ModelViewSet):
                 serializer = self.get_serializer(instance, data=request.data, partial=True)
 
                 if serializer.is_valid():
-                    # Get User instances from validated_data (not IDs)
                     new_community_lead = serializer.validated_data.get('community_lead')
                     new_co_lead = serializer.validated_data.get('co_lead')
                     new_secretary = serializer.validated_data.get('secretary')
-
-                    # Check if any new executives are already executives in other communities
                     if new_community_lead and new_community_lead != instance.community_lead:
                         if ExecutiveMember.objects.filter(user=new_community_lead).exclude(community=instance).exists():
                             return Response({
@@ -264,8 +257,6 @@ class JoinCommunityView(APIView):
                 {"error": "Community not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
-
-        # count the number of communities the user has joined
         user_community_count = CommunityMember.objects.filter(email=user_email).count()
 
         if user_community_count >= 3:
@@ -282,8 +273,6 @@ class JoinCommunityView(APIView):
         if serializer.is_valid():
             member = serializer.save(community=community)
             community.update_total_members()
-
-            # Get updated community with members list
             community_serializer = CommunityProfileSerializer(community)
 
             return Response({
