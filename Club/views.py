@@ -306,7 +306,47 @@ class ClubDetailView(APIView):
 class ExecutiveMemberViewSet(viewsets.ModelViewSet):
     queryset = ExecutiveMember.objects.all()
     serializer_class = ExecutiveMemberSerializer
-    
+    """
+        A viewset for managing executive members.
+
+        Provides default actions:
+        - **list**: Get all executive members.
+        - **retrieve**: Get a single executive member by ID.
+        - **create**: Create a new executive member.
+        - **update/partial_update**: Update an executive member.
+        - **destroy**: Delete an executive member.
+
+        Custom actions:
+        - **check_email**: Verify if a user (by email) is an executive member.
+        """
+
+    queryset = ExecutiveMember.objects.all()
+    serializer_class = ExecutiveMemberSerializer
+
+    @swagger_auto_schema(
+        operation_summary="Create an executive member",
+        operation_description="Create a new executive member record.",
+        tags=["Executive Members"],
+        request_body=ExecutiveMemberSerializer,
+        responses={
+            201: openapi.Response(
+                description="Executive member created successfully",
+                examples={
+                    "application/json": {
+                        "message": "Executive member created successfully",
+                        "status": "success",
+                        "data": {
+                            "id": 1,
+                            "name": "John Doe",
+                            "email": "john@example.com",
+                            "position": "President"
+                        }
+                    }
+                },
+            ),
+            400: "Validation error"
+        }
+    )
     def create(self, request, *args, **kwargs):
         try:
             serializer = self.get_serializer(data=request.data)
@@ -317,7 +357,7 @@ class ExecutiveMemberViewSet(viewsets.ModelViewSet):
                     'status': 'success',
                     'data': serializer.data
                 }, status=status.HTTP_201_CREATED)
-            
+
             error_messages = "\n".join(
                 f"{field}: {', '.join(errors)}" for field, errors in serializer.errors.items()
             )
@@ -332,7 +372,27 @@ class ExecutiveMemberViewSet(viewsets.ModelViewSet):
                 'status': 'failed',
                 'data': None
             }, status=status.HTTP_400_BAD_REQUEST)
-            
+
+    @swagger_auto_schema(
+        operation_summary="List executive members",
+        operation_description="Retrieve a list of all executive members.",
+        tags=["Executive Members"],
+        responses={
+            200: openapi.Response(
+                description="List of executive members",
+                examples={
+                    "application/json": {
+                        "message": "Executive members retrieved successfully",
+                        "status": "success",
+                        "data": [
+                            {"id": 1, "name": "John Doe", "email": "john@example.com", "position": "President"},
+                            {"id": 2, "name": "Jane Smith", "email": "jane@example.com", "position": "Treasurer"}
+                        ]
+                    }
+                },
+            )
+        }
+    )
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         serializer = self.get_serializer(queryset, many=True)
@@ -341,7 +401,29 @@ class ExecutiveMemberViewSet(viewsets.ModelViewSet):
             'status': 'success',
             'data': serializer.data
         })
-    
+
+    @swagger_auto_schema(
+        operation_summary="Retrieve an executive member",
+        operation_description="Retrieve a single executive member by ID.",
+        tags=["Executive Members"],
+        responses={
+            200: openapi.Response(
+                description="Executive member retrieved successfully",
+                examples={
+                    "application/json": {
+                        "message": "Executive member retrieved successfully",
+                        "status": "success",
+                        "data": {
+                            "id": 1,
+                            "name": "John Doe",
+                            "email": "john@example.com",
+                            "position": "President"
+                        }
+                    }
+                },
+            )
+        }
+    )
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
@@ -350,7 +432,31 @@ class ExecutiveMemberViewSet(viewsets.ModelViewSet):
             'status': 'success',
             'data': serializer.data
         })
-    
+
+    @swagger_auto_schema(
+        operation_summary="Update an executive member",
+        operation_description="Update an existing executive member record.",
+        tags=["Executive Members"],
+        request_body=ExecutiveMemberSerializer,
+        responses={
+            200: openapi.Response(
+                description="Executive member updated successfully",
+                examples={
+                    "application/json": {
+                        "message": "Executive member updated successfully",
+                        "status": "success",
+                        "data": {
+                            "id": 1,
+                            "name": "John Doe",
+                            "email": "john@example.com",
+                            "position": "President"
+                        }
+                    }
+                },
+            ),
+            400: "Validation error"
+        }
+    )
     def update(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
@@ -362,7 +468,7 @@ class ExecutiveMemberViewSet(viewsets.ModelViewSet):
                     'status': 'success',
                     'data': serializer.data
                 })
-            
+
             error_messages = "\n".join(
                 f"{field}: {', '.join(errors)}" for field, errors in serializer.errors.items()
             )
@@ -377,7 +483,25 @@ class ExecutiveMemberViewSet(viewsets.ModelViewSet):
                 'status': 'failed',
                 'data': None
             }, status=status.HTTP_400_BAD_REQUEST)
-            
+
+    @swagger_auto_schema(
+        operation_summary="Delete an executive member",
+        operation_description="Delete an executive member by ID.",
+        tags=["Executive Members"],
+        responses={
+            204: openapi.Response(
+                description="Executive member deleted successfully",
+                examples={
+                    "application/json": {
+                        "message": "Executive member deleted successfully",
+                        "status": "success",
+                        "data": None
+                    }
+                },
+            ),
+            400: "Error deleting member"
+        }
+    )
     def destroy(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
@@ -393,7 +517,40 @@ class ExecutiveMemberViewSet(viewsets.ModelViewSet):
                 'status': 'failed',
                 'data': None
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
+
+    @swagger_auto_schema(
+        method="post",
+        operation_summary="Check if a user is an executive member",
+        operation_description="Check whether a given email belongs to an executive member.",
+        tags=["Executive Members"],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "email": openapi.Schema(type=openapi.TYPE_STRING, description="User's email address")
+            },
+            required=["email"]
+        ),
+        responses={
+            200: openapi.Response(
+                description="Check result",
+                examples={
+                    "application/json": {
+                        "message": "User is an executive member",
+                        "status": "success",
+                        "data": {
+                            "id": 1,
+                            "name": "John Doe",
+                            "email": "john@example.com",
+                            "position": "President"
+                        },
+                        "is_executive": True
+                    }
+                },
+            ),
+            400: "Invalid request"
+        }
+    )
     @action(detail=False, methods=['post'], url_path='check-email')
     def check_email(self,request):
         try:
@@ -405,7 +562,7 @@ class ExecutiveMemberViewSet(viewsets.ModelViewSet):
                     "status":"failed",
                     "data":None
                 },status=status.HTTP_400_BAD_REQUEST)
-            
+
             executive = ExecutiveMember.objects.filter(email=email).first()
 
             if executive:
@@ -429,4 +586,3 @@ class ExecutiveMemberViewSet(viewsets.ModelViewSet):
                 "status":"failed",
                 "data":None,
             }, status=status.HTTP_400_BAD_REQUEST)
-        

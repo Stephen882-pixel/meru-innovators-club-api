@@ -9,7 +9,6 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
     TokenVerifyView
 )
-from partners.views import PartnerViewSet
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -22,7 +21,6 @@ schema_view = get_schema_view(
     public=True,
     permission_classes=[permissions.AllowAny]
 )
-
 
 from testimonials.views import TestimonialViewSet
 router = DefaultRouter()
@@ -42,8 +40,8 @@ urlpatterns = [
          schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 
 
-    path('api/', include('Api.urls')),
-    path('comments/', include('comments.urls')),
+
+    #path('comments/', include('comments.urls')),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
@@ -52,15 +50,16 @@ urlpatterns = [
     path('', include(router.urls)),
     #path('', include(event_router.urls)),
     path('testimonies/', include('testimonials.urls')),
-    path('comments/', include('comments.urls')),
 
 
 
+    path('api/', include('Api.urls')),
     path('api/', include('Club.urls')),
     path('api/',include('events.urls')),
     path('api/',include('communities.urls')),
     path('api/',include('communications.urls')),
     path('api/', include('feedback.urls')),
     path('api/', include('partners.urls')),
+    path('api/comments/', include('comments.urls')),
 ]
 
