@@ -5,11 +5,103 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e718eb2b-bd43-4e2e-acab-ef38823f6725" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/meru-innovators-club-api.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Club/migrations/0002_initial.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/account/Email.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/account/migrations/0003_alter_userprofile_bio.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/account/migrations/0004_alter_userprofile_bio.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/communications/admin.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/communications/apps.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/communications/migrations/0001_initial.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/communications/models.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/communications/serializers.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/communications/views.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/communities/admin.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/communities/apps.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/communities/migrations/0001_initial.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/communities/migrations/0002_community_club.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/communities/migrations/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/communities/models.py" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/communities/serializers.py" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/communities/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Innovation_WebApp/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/Innovation_WebApp/serializers.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/communities/views.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/events/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/events/admin.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/events/apps.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/events/migrations/0001_initial.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/events/migrations/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/events/models.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/events/serializers.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/events/tests.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/events/urls.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/events/views.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feedback/migrations/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feedback/tests.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feedback/views.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feedback_screenshots/Web_Dev_lead_cert.jpeg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/partners/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Club/migrations/0001_initial.py" beforeDir="false" afterPath="$PROJECT_DIR$/Club/migrations/0001_initial.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Club/migrations/0002_remove_executivemember_bio_and_more.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Club/migrations/0003_alter_executivemember_unique_together.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Club/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/Club/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Club/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/Club/serializers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Club/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/Club/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Feedback/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/feedback/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Feedback/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/feedback/admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Feedback/apps.py" beforeDir="false" afterPath="$PROJECT_DIR$/feedback/apps.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Feedback/migrations/0001_initial.py" beforeDir="false" afterPath="$PROJECT_DIR$/feedback/migrations/0001_initial.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Feedback/migrations/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/communications/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Feedback/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/feedback/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Feedback/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/feedback/serializers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Feedback/signals.py" beforeDir="false" afterPath="$PROJECT_DIR$/feedback/signals.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Feedback/tests.py" beforeDir="false" afterPath="$PROJECT_DIR$/communications/tests.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Feedback/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/feedback/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Feedback/views.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Innovation_WebApp/Email.py" beforeDir="false" afterPath="$PROJECT_DIR$/events/Email.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Innovation_WebApp/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/communications/migrations/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Innovation_WebApp/admin.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Innovation_WebApp/apps.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Innovation_WebApp/logging_utils.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Innovation_WebApp/middleware.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Innovation_WebApp/migrations/0001_initial.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Innovation_WebApp/migrations/0002_alter_communityprofile_co_lead_and_more.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Innovation_WebApp/migrations/0003_rename_joined_at_communitymember_joined_date_and_more.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Innovation_WebApp/migrations/0004_eventregistration_user.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Innovation_WebApp/migrations/0005_events_registration_link_and_more.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Innovation_WebApp/migrations/0006_remove_events_registration_link_and_more.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Innovation_WebApp/migrations/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/communities/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Innovation_WebApp/models.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Innovation_WebApp/serializers.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Innovation_WebApp/tests.py" beforeDir="false" afterPath="$PROJECT_DIR$/communities/tests.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Innovation_WebApp/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/communications/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Innovation_WebApp/utils.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Innovation_WebApp/views.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/MUST/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/MUST/settings.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MUST/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/MUST/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/account/migrations/0002_alter_userprofile_bio.py" beforeDir="false" afterPath="$PROJECT_DIR$/account/migrations/0002_alter_userprofile_bio.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/account/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/account/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/account/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/account/serializers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/account/tests.py" beforeDir="false" afterPath="$PROJECT_DIR$/account/tests.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/account/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/account/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/account/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/account/utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/account/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/account/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/blog/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/blog/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/blog/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/blog/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/comments/migrations/0001_initial.py" beforeDir="false" afterPath="$PROJECT_DIR$/comments/migrations/0001_initial.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/comments/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/comments/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/comments/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/comments/serializers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/comments/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/comments/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/partners/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/partners/serializers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/partners/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/partners/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/testimonials/permissions.py" beforeDir="false" afterPath="$PROJECT_DIR$/testimonials/permissions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/testimonials/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/testimonials/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -40,7 +132,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "feature/refactor-auth",
+    "git-widget-placeholder": "Merging master",
     "last_opened_file_path": "/home/stephen/Desktop/PROJECTS/meru-innovators-club-api"
   }
 }]]></component>

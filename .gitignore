@@ -8,10 +8,9 @@ db.sqlite3
 __pycache__/
 *.py[cod]
 *$py.class
-*.pyo
+
 # C extensions
 *.so
-*.pyd
 
 # Distribution / packaging
 .Python
@@ -185,18 +184,4 @@ cython_debug/
 /rsvps/__pycache__
 /sociallogins/__pycache__
 /Api/__pycache__myenv/
-__pycache__/
-__pycache__/
-
-# Django stuff
-*.sqlite3
-db.sqlite3
-
-# Logs
-*.log
-
-# Virtual env
-.venv/
-env/
-venv/
-
+.env

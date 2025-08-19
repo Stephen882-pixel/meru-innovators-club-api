@@ -5,20 +5,16 @@ import boto3
 import uuid
 from django.conf import settings
 
-# class PartnerSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Partner
-#         fields = '__all__'
 
 class PartnerSerializer(serializers.ModelSerializer):
     logo_field = serializers.ImageField(write_only=True, required=False)  # To handle logo upload
-    logo_url = serializers.URLField(read_only=True)  # To return the S3 URL
+    logo_url = serializers.URLField(read_only=True)
     
     class Meta:
         model = Partner
         fields = '__all__'
         extra_kwargs = {
-            'logo': {'read_only': True}  # Make the original logo field read-only
+            'logo': {'read_only': True}
         }
     
     def create(self, validated_data):
