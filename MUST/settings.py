@@ -34,7 +34,6 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'dj_rest_auth',
-    'Innovation_WebApp',
     'tinymce',
     'account.apps.AccountConfig',
     'blog',
@@ -48,11 +47,14 @@ INSTALLED_APPS = [
     'sociallogins',
     'corsheaders',
     'comments',
-    'Feedback',
+    'feedback',
     'testimonials',
     'partners',
     'Club',
-    # 'fcm_django',
+    'drf_yasg',
+    'events',
+    'communities',
+    'communications',
 ]
 
 SITE_ID = 2
@@ -73,23 +75,23 @@ ROOT_URLCONF = 'MUST.urls'
 WSGI_APPLICATION = 'MUST.wsgi.application'
 
 # Database Configuration for Neon PostgreSQL
-DATABASES = {
-    'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
-        conn_max_age=600,
-        ssl_require=True
-    )
-}
-
-
-
-
 # DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',  
-#     }
+#     'default': dj_database_url.config(
+#         default=os.environ.get('DATABASE_URL'),
+#         conn_max_age=600,
+#         ssl_require=True
+#     )
 # }
+
+
+
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
 
 
 # Authentication and Password Validation

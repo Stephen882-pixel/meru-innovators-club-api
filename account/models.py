@@ -29,12 +29,11 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     course = models.CharField(max_length=50)
     registration_no = models.CharField(max_length=50,blank=True,null=True)
-    bio = models.CharField(null=True)
+    bio = models.CharField(max_length=255, null=True, blank=True)
     tech_stacks = models.TextField(blank=True,null=True) # Will store as JSON string
     social_media = models.TextField(blank=True,null=True)
     photo = models.ImageField(upload_to='profile_photos/',blank=True,null=True)
 
-    #  Additional student-specific fields
     graduation_year = models.PositiveIntegerField(blank=True,null=True)
     projects = models.TextField(blank=True,null=True)
     skills = models.TextField(blank=True,null=True)
@@ -75,10 +74,7 @@ class UserProfile(models.Model):
         """Get skills as a list"""
         return json.loads(self.skills) if self.skills else []
     
-    
 
-
-# forgot password OTP
 class OTP(models.Model):
     user = models.ForeignKey(User,on_delete=models.CASCADE)
     otp_code = models.CharField(max_length=6)
@@ -88,16 +84,12 @@ class OTP(models.Model):
 
     def save(self,*args,**Kwargs):
         if not self.expires_at:
-            # Set expiration time to 10 minutes from creation
             self.expires_at = timezone.now() + timedelta(minutes=10)
         super().save(*args,**Kwargs)
     
     def is_valid(self):
         return timezone.now() <= self.expires_at
 
-
-# Sign up otp
-    
 
 class PasswordResetSession(models.Model):
     id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
@@ -109,7 +101,6 @@ class PasswordResetSession(models.Model):
 
     def save(self,*args,**kwargs):
         if not self.expires_at:
-            # Set expiration time to 10 minutes from creation
             self.expires_at = timezone.now() + timedelta(minutes=10)
         super().save(*args, **kwargs)
 

@@ -11,11 +11,10 @@ class ClubSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'about_us', 'vision', 'mission', 'social_media', 'communities']
     
     def get_communities(self, obj):
-        communities = obj.communities.all()
+        communities = obj.communities_from_communities_app.all()
         result = []
         
         for community in communities:
-            # Get community lead details
             community_lead_details = None
             if community.community_lead:
                 community_lead_details = {
@@ -23,8 +22,6 @@ class ClubSerializer(serializers.ModelSerializer):
                     'name': str(community.community_lead),
                     'email': community.community_lead.email if hasattr(community.community_lead, 'email') else None
                 }
-            
-            # Get co-lead details
             co_lead_details = None
             if community.co_lead:
                 co_lead_details = {
@@ -32,8 +29,7 @@ class ClubSerializer(serializers.ModelSerializer):
                     'name': str(community.co_lead),
                     'email': community.co_lead.email if hasattr(community.co_lead, 'email') else None
                 }
-            
-            # Get secretary details
+
             secretary_details = None
             if community.secretary:
                 secretary_details = {
@@ -41,8 +37,7 @@ class ClubSerializer(serializers.ModelSerializer):
                     'name': str(community.secretary),
                     'email': community.secretary.email if hasattr(community.secretary, 'email') else None
                 }
-            
-            # Get social media
+
             social_media = []
             if hasattr(community, 'social_media'):
                 for sm in community.social_media.all():
@@ -51,8 +46,7 @@ class ClubSerializer(serializers.ModelSerializer):
                         'platform': sm.platform,
                         'url': sm.url
                     })
-            
-            # Get sessions
+
             sessions = []
             if hasattr(community, 'get_sessions'):
                 for session in community.get_sessions():
@@ -63,8 +57,7 @@ class ClubSerializer(serializers.ModelSerializer):
                         'meeting_type': session.meeting_type,
                         'location': session.location
                     })
-            
-            # Get members
+
             members = []
             if hasattr(community, 'members'):
                 for member in community.members.all():
@@ -120,17 +113,14 @@ class ExecutiveMemberSerializer(serializers.ModelSerializer):
         }
     
     def validate(self, data):
-        # Check if user is already an executive in another community
         user = data.get('user')
         community = data.get('community')
         
         if self.instance:
-            # For update operations, exclude the current instance
             is_executive = ExecutiveMember.objects.filter(
                 user=user
             ).exclude(id=self.instance.id).exists()
         else:
-            # For create operations
             is_executive = ExecutiveMember.objects.filter(user=user).exists()
         
         if is_executive:

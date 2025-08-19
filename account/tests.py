@@ -3,7 +3,6 @@ from django.urls import reverse
 import json
 from rest_framework import status
 from .models import User
-from .serializers import RegisterSerializer,LoginSerializer
 from django.contrib.auth.hashers import make_password
 from .views import send_verification_email,generate_verification_token
 from django.core import mail
@@ -42,7 +41,6 @@ class AuthenticationTests(TestCase):
             content_type='application/json'
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        #self.assertFalse(User.objects.get(email=self.valid_user_data['email']).is_active)
         print(response.status_code)
         print(response.json())
 

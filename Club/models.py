@@ -22,7 +22,7 @@ class ExecutiveMember(models.Model):
     ]
     
     user = models.ForeignKey(User, related_name='executive_positions', on_delete=models.CASCADE)
-    community = models.ForeignKey('Innovation_WebApp.CommunityProfile', related_name='executive_members', on_delete=models.CASCADE)
+    community = models.ForeignKey('communities.CommunityProfile', related_name='executive_members', on_delete=models.CASCADE)
     position = models.CharField(max_length=10, choices=POSITIONS)
     joined_date = models.DateField(default=now)
     
