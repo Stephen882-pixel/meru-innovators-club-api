@@ -1,5 +1,6 @@
 import json
 from datetime import timedelta
+from http.client import responses
 from unittest.mock import patch,MagicMock
 from django.test import TestCase
 from django.contrib.auth.models import User
@@ -72,3 +73,11 @@ class RegisterViewTests(BaseAuthTestCase):
 
             # Check OTP email was sent
             mock_send_otp.assert_called_once()
+
+    def test_duplicate_username_registration(self):
+        User.objects.create_user(username='johndoe',email='otherexample.com')
+
+        response = self.client.post(reverse('register'), self.user_data)
+
+        self.assertEqual(response.status_code,status.HTTP_400_BAD_REQUEST)
+        self.assertIn('Username already exists',response.data['message'])
