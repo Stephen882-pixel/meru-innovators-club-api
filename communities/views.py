@@ -80,7 +80,6 @@ class CommunityProfileViewSet(viewsets.ModelViewSet):
                 'data': None
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
     def update(self, request, *args, **kwargs):
         try:
             with transaction.atomic():
@@ -88,35 +87,32 @@ class CommunityProfileViewSet(viewsets.ModelViewSet):
                 serializer = self.get_serializer(instance, data=request.data, partial=True)
 
                 if serializer.is_valid():
-                    # Validate executive conflicts using IDs
-                    community_lead_id = serializer.validated_data.get('community_lead')
-                    co_lead_id = serializer.validated_data.get('co_lead')
-                    secretary_id = serializer.validated_data.get('secretary')
+                    # Get User instances from validated_data (not IDs)
+                    new_community_lead = serializer.validated_data.get('community_lead')
+                    new_co_lead = serializer.validated_data.get('co_lead')
+                    new_secretary = serializer.validated_data.get('secretary')
 
                     # Check if any new executives are already executives in other communities
-                    if community_lead_id and community_lead_id != instance.community_lead_id:
-                        community_lead = get_object_or_404(User, id=community_lead_id)
-                        if ExecutiveMember.objects.filter(user=community_lead).exclude(community=instance).exists():
+                    if new_community_lead and new_community_lead != instance.community_lead:
+                        if ExecutiveMember.objects.filter(user=new_community_lead).exclude(community=instance).exists():
                             return Response({
-                                'message': f'User {community_lead.email} is already an executive in another community',
+                                'message': f'User {new_community_lead.email} is already an executive in another community',
                                 'status': 'failed',
                                 'data': None
                             }, status=status.HTTP_400_BAD_REQUEST)
 
-                    if co_lead_id and co_lead_id != instance.co_lead_id:
-                        co_lead = get_object_or_404(User, id=co_lead_id)
-                        if ExecutiveMember.objects.filter(user=co_lead).exclude(community=instance).exists():
+                    if new_co_lead and new_co_lead != instance.co_lead:
+                        if ExecutiveMember.objects.filter(user=new_co_lead).exclude(community=instance).exists():
                             return Response({
-                                'message': f'User {co_lead.email} is already an executive in another community',
+                                'message': f'User {new_co_lead.email} is already an executive in another community',
                                 'status': 'failed',
                                 'data': None
                             }, status=status.HTTP_400_BAD_REQUEST)
 
-                    if secretary_id and secretary_id != instance.secretary_id:
-                        secretary = get_object_or_404(User, id=secretary_id)
-                        if ExecutiveMember.objects.filter(user=secretary).exclude(community=instance).exists():
+                    if new_secretary and new_secretary != instance.secretary:
+                        if ExecutiveMember.objects.filter(user=new_secretary).exclude(community=instance).exists():
                             return Response({
-                                'message': f'User {secretary.email} is already an executive in another community',
+                                'message': f'User {new_secretary.email} is already an executive in another community',
                                 'status': 'failed',
                                 'data': None
                             }, status=status.HTTP_400_BAD_REQUEST)

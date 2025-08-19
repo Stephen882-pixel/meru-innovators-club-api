@@ -4,7 +4,6 @@ from django.dispatch import receiver
 from account.models import User
 
 # Create your models here.
-
 class Social_media(models.Model):
     platform = models.CharField(max_length=50)
     url = models.URLField()

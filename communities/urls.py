@@ -29,7 +29,7 @@ urlpatterns = [
     path('list-communities/',community_list_create,name='list-communities'),
     path('retrieve-community/<int:pk>/',community_detail,name='retrieve-community'),
     path('update-community/<int:pk>/',community_detail,name='update-community'),
-    path('search-community',community_search,name='search-community'),
+    path('search-community/',community_search,name='search-community'),
 
     path('communities/<int:pk>/join/', JoinCommunityView.as_view(), name='join-community'),
     path('communities/<int:pk>/members/', CommunityMembersView.as_view(), name='community-members'),
