@@ -56,7 +56,6 @@ urlpatterns = [
     path('', include(router.urls)),
     #path('', include(event_router.urls)),
     path('testimonies/', include('testimonials.urls')),
-    path('', include('Feedback.urls')),
     path('comments/', include('comments.urls')),
 
 
@@ -64,6 +63,7 @@ urlpatterns = [
     path('api/', include('Club.urls')),
     path('api/',include('events.urls')),
     path('api/',include('communities.urls')),
-    path('api/',include('communications.urls'))
+    path('api/',include('communications.urls')),
+    path('api/', include('feedback.urls')),
 ]
 

@@ -1,3 +1,5 @@
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import viewsets,permissions,filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -34,7 +36,28 @@ class FeedbackViewSet(viewsets.ModelViewSet):
         if user.is_staff:
             return Feedback.objects.all().order_by('-submitted_at')
         return Feedback.objects.filter(user=user).order_by('-submitted_at')
-    
+
+    @swagger_auto_schema(
+        method="patch",
+        operation_summary="Set feedback priority",
+        operation_description="Allows admins to update the priority of a feedback entry.",
+        tags=["Feedback"],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "priority": openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description="Priority of the feedback",
+                    enum=[p[0] for p in FeedbackPriority.choices]
+                )
+            },
+            required=["priority"]
+        ),
+        responses={
+            200: openapi.Response("Priority successfully updated"),
+            400: openapi.Response("Invalid priority value"),
+        },
+    )
     @action(detail=True, methods=['patch'])
     def set_priority(self, request, pk=None):
         feedback = self.get_object()
@@ -44,7 +67,28 @@ class FeedbackViewSet(viewsets.ModelViewSet):
             feedback.save()
             return Response({'status': 'priority set'})
         return Response({'error': 'Invalid priority'}, status=400)
-    
+
+    @swagger_auto_schema(
+        method="patch",
+        operation_summary="Set feedback status",
+        operation_description="Allows admins to update the status of a feedback entry.",
+        tags=["Feedback"],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "status": openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description="Status of the feedback",
+                    enum=[s[0] for s in FeedbackStatus.choices]
+                )
+            },
+            required=["status"]
+        ),
+        responses={
+            200: openapi.Response("Status successfully updated"),
+            400: openapi.Response("Invalid status value"),
+        },
+    )
     @action(detail=True, methods=['patch'])
     def set_status(self, request, pk=None):
         feedback = self.get_object()
@@ -54,9 +98,31 @@ class FeedbackViewSet(viewsets.ModelViewSet):
             feedback.save()
             return Response({'status': 'status updated'})
         return Response({'error': 'Invalid status'}, status=400)
-    
 
-    
+    @swagger_auto_schema(
+        method="get",
+        operation_summary="Feedback analytics",
+        operation_description=(
+                "Provides feedback analytics including category distribution, "
+                "status distribution, priority distribution, and submission trends "
+                "for the last 30 days."
+        ),
+        tags=["Feedback"],
+        responses={
+            200: openapi.Response(
+                description="Analytics data retrieved successfully",
+                examples={
+                    "application/json": {
+                        "category_stats": [{"category": "BUG_REPORT", "count": 5}],
+                        "status_stats": [{"status": "PENDING", "count": 10}],
+                        "priority_stats": [{"priority": "HIGH", "count": 3}],
+                        "trend_data": [{"date": "2025-08-01", "count": 2}],
+                        "total_count": 18,
+                    }
+                }
+            )
+        },
+    )
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAdminUser])
     def analytics(self, request):
         # Get stats by category

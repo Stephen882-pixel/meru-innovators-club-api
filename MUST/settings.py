@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     'sociallogins',
     'corsheaders',
     'comments',
-    'Feedback',
+    'feedback',
     'testimonials',
     'partners',
     'Club',
