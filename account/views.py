@@ -32,6 +32,7 @@ class RegisterView(APIView):
 
     @swagger_auto_schema(
         tags=["Authentication"],
+        operation_summary="Register a new user account",
         operation_description="Register a new user and send an OTP to their email for verification.",
         request_body=RegisterSerializer,
         responses={
@@ -146,6 +147,7 @@ class UnifiedOTPVerificationView(APIView):
 
     @swagger_auto_schema(
         tags=["Authentication"],
+        operation_summary="verify OTP",
         operation_description="Verify an OTP for registration or password reset",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -263,6 +265,7 @@ class LoginView(APIView):
 
     @swagger_auto_schema(
         tags=["Authentication"],
+        operation_summary="login as user",
         operation_description="Authenticate a user and return JWT access and refresh tokens.",
         request_body=LoginSerializer,
         responses={
@@ -345,6 +348,7 @@ class LogoutView(APIView):
 
     @swagger_auto_schema(
         tags=["Authentication"],
+        operation_summary='logs out a user',
         operation_description="Logs out the user by blacklisting the provided refresh token.",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -427,6 +431,7 @@ class ChangePasswordView(APIView):
 
     @swagger_auto_schema(
         tags=["Authentication"],
+        operation_summary="change password",
         operation_description="""
         Change the password of the currently logged-in user.  
         - Requires **Bearer token authentication**.  
@@ -513,6 +518,7 @@ class UserDataView(APIView):
 
     @swagger_auto_schema(
         tags=["Authentication"],
+        operation_summary="view own profile",
         operation_description="Retrieve the authenticated user's profile data.",
         responses={
             200: openapi.Response(
@@ -656,6 +662,7 @@ class UserProfileUpdateView(APIView):
 
     @swagger_auto_schema(
         tags=["Authentication"],
+        operation_summary="update personal profile",
         operation_description="Update the authenticated user's profile information. Accepts JSON or multipart/form-data when uploading photo.",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -802,6 +809,7 @@ class AllUsersView(APIView):
 
     @swagger_auto_schema(
         tags=["Authentication"],
+        operation_summary="Retrieves users profiles",
         operation_description="Retrieve all users with there basic profile details (paginated).",
         responses={
             200: openapi.Response(
