@@ -184,3 +184,5 @@ cython_debug/
 /rsvps/__pycache__
 /sociallogins/__pycache__
 /Api/__pycache__myenv/
+__pycache__/
+__pycache__/
