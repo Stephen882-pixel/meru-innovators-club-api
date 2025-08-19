@@ -2,11 +2,9 @@ from rest_framework.views import APIView
 from .models import CommunityProfile,CommunityMember
 from .serializers import CommunityProfileSerializer,CommunityJoinSerializer,CommunityMemberListSerializer
 from django.db import transaction
-from django.shortcuts import get_object_or_404
 from Club.models import ExecutiveMember
 from rest_framework.response import Response
 from rest_framework import viewsets, status
-from account.models import User
 from rest_framework.decorators import action
 # Create your views here.
 
