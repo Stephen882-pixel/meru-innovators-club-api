@@ -328,8 +328,9 @@ class CommunityProfileViewSet(viewsets.ModelViewSet):
                 'status': 'failed',
                 'data': None
             }, status=status.HTTP_400_BAD_REQUEST)
+
     @swagger_auto_schema(
-        tags=["communities"],
+        tags=["Communities"],
         operation_summary="Retrieve a single community profile",
         operation_description="""
         Retrieves details of a specific community profile by its **ID**.  
@@ -348,10 +349,10 @@ class CommunityProfileViewSet(viewsets.ModelViewSet):
             200: openapi.Response(
                 description="Community retrieved successfully",
                 examples={
-                    "application/json":{
-                        "message":"Community retrieved successfully",
-                        "status":"success",
-                        "data":{
+                    "application/json": {
+                        "message": "Community retrieved successfully",
+                        "status": "success",
+                        "data": {
                             "id": 1,
                             "name": "Cybersecurity Community",
                             "community_lead": 3,
@@ -364,13 +365,13 @@ class CommunityProfileViewSet(viewsets.ModelViewSet):
                     }
                 }
             ),
-            400: openapi.Response(
-                description="community not found",
+            404: openapi.Response(
+                description="Community not found",
                 examples={
-                    "application/json":{
-                        "message":"community not found",
-                        "status":"failed",
-                        "data":None
+                    "application/json": {
+                        "message": "Community not found",
+                        "status": "failed",
+                        "data": None
                     }
                 }
             )
@@ -450,14 +451,14 @@ class CommunityProfileViewSet(viewsets.ModelViewSet):
             name = request.query_params.get('name', None)
             if not name:
                 return Response({
-                    "message": "Pleasee provide a community name too search",
+                    "message": "Please provide a community name to search",
                     "status": "failed",
                     "data": None
                 }, status=status.HTTP_400_BAD_REQUEST)
             community = CommunityProfile.objects.get(name__iexact=name)
             serializer = self.get_serializer(community)
             return Response({
-                "name": "Community retrieved successfully",
+                "message": "Community retrieved successfully",
                 "status": "success",
                 "data": serializer.data
             }, status=status.HTTP_200_OK)
@@ -469,7 +470,7 @@ class CommunityProfileViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({
-                "message": f'Error retrieving community:{str(e)}',
+                "message": f'Error retrieving community: {str(e)}',
                 "status": "failed",
                 "data": None
             }, status=status.HTTP_400_BAD_REQUEST)
@@ -478,6 +479,7 @@ class CommunityProfileViewSet(viewsets.ModelViewSet):
 class JoinCommunityView(APIView):
 
     @swagger_auto_schema(
+        tags=["Communities"],
         operation_summary="Join a community",
         operation_description="""
                Allows a user to join a specific community using the community ID and their email address.  
@@ -548,15 +550,18 @@ class JoinCommunityView(APIView):
         try:
             community = CommunityProfile.objects.get(id=community_id)
         except CommunityProfile.DoesNotExist:
-            return Response(
-                {"error": "Community not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({
+                "message": "Community not found",
+                "status": "failed",
+                "data": None
+            }, status=status.HTTP_404_NOT_FOUND)
         user_community_count = CommunityMember.objects.filter(email=user_email).count()
 
         if user_community_count >= 3:
             return Response({
-                "message": "You cannot join more than 3 communities."
+                "message": "You cannot join more than 3 communities.",
+                "status": "failed",
+                "data": None
             }, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = CommunityJoinSerializer(data={
