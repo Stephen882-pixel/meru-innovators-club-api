@@ -1,4 +1,3 @@
-from drf_yasg.utils import swagger_auto_schema
 from rest_framework.views import APIView
 from .models import CommunityProfile,CommunityMember
 from .serializers import CommunityProfileSerializer,CommunityJoinSerializer,CommunityMemberListSerializer
@@ -127,58 +126,36 @@ class CommunityProfileViewSet(viewsets.ModelViewSet):
                 'status': 'failed',
                 'data': None
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     @swagger_auto_schema(
-        tags=["Communities"],
-        operation_summary="update a community profile",
+        operation_summary="Update a community",
         operation_description="""
-        Updates an existing community profile.  
-        Notes:
-        - Supports **partial updates** (you don’t need to send all fields).  
-        - Restrictions:  
-            * `community_lead`, `co_lead`, or `secretary` cannot be reassigned to users who are already executives in another community.
-        """,
+            Update the details of a community (partial update allowed).  
+
+            - Ensures that `community_lead`, `co_lead`, and `secretary` are unique 
+              across different communities.  
+            - Prevents assigning a user as an executive in more than one community.  
+            - Uses database transactions to maintain data integrity.  
+
+            **Validation rules:**  
+            - A user cannot be assigned as `community_lead`, `co_lead`, or `secretary` 
+              in more than one community.  
+            - Partial updates are supported.  
+
+            **Responses:**  
+            - 200: Community updated successfully  
+            - 400: Validation or assignment error  
+            - 404: Community not found  
+            - 500: Internal server error  
+            """,
         request_body=CommunityProfileSerializer,
         responses={
-            200: openapi.Response(
-                description="Community updated successfully",
-                examples={
-                    "application/json":{
-                        "message":"community updated successfully",
-                        "status":"success",
-                        "data":{
-                            "id": 1,
-                            "name": "AI & Data Science Community",
-                            "community_lead": 6,
-                            "co_lead": 7,
-                            "secretary": 8,
-                            "email": "aids@example.com",
-                            "phone_number": "0712345678",
-                            "tech_stack": ["Python", "TensorFlow", "Pandas"]
-                        }
-                    }
-                }
-            ),
-            400: openapi.Response(
-                description="Validation error or executive role conflict",
-                examples={
-                    "application/json":{
-                        "message":"User jane@example.com is already an executive in another community",
-                        "status":"failed",
-                        "data":None
-                    }
-                }
-            ),
-            500: openapi.Response(
-                description="Server error",
-                examples={
-                    "application/json":{
-                        "message":"server error",
-                        "status":"failed",
-                        "data":None
-                    }
-                }
-            )
-        }
+            200: openapi.Response("Community updated successfully"),
+            400: openapi.Response("Validation or assignment error"),
+            404: openapi.Response("Community not found"),
+            500: openapi.Response("Internal server error"),
+        },
+        tags=["Communities"]
     )
     def update(self, request, *args, **kwargs):
         try:
@@ -190,29 +167,39 @@ class CommunityProfileViewSet(viewsets.ModelViewSet):
                     new_community_lead = serializer.validated_data.get('community_lead')
                     new_co_lead = serializer.validated_data.get('co_lead')
                     new_secretary = serializer.validated_data.get('secretary')
-                    if new_community_lead and new_community_lead != instance.community_lead:
-                        if ExecutiveMember.objects.filter(user=new_community_lead).exclude(community=instance).exists():
-                            return Response({
-                                'message': f'User {new_community_lead.email} is already an executive in another community',
-                                'status': 'failed',
-                                'data': None
-                            }, status=status.HTTP_400_BAD_REQUEST)
+                    if (
+                            new_community_lead
+                            and new_community_lead != instance.community_lead
+                            and ExecutiveMember.objects.filter(user=new_community_lead).exclude(
+                        community=instance).exists()
+                    ):
+                        return Response({
+                            'message': f'User {new_community_lead.email} is already an executive in another community',
+                            'status': 'failed',
+                            'data': None
+                        }, status=status.HTTP_400_BAD_REQUEST)
 
-                    if new_co_lead and new_co_lead != instance.co_lead:
-                        if ExecutiveMember.objects.filter(user=new_co_lead).exclude(community=instance).exists():
-                            return Response({
-                                'message': f'User {new_co_lead.email} is already an executive in another community',
-                                'status': 'failed',
-                                'data': None
-                            }, status=status.HTTP_400_BAD_REQUEST)
+                    if (
+                            new_co_lead
+                            and new_co_lead != instance.co_lead
+                            and ExecutiveMember.objects.filter(user=new_co_lead).exclude(community=instance).exists()
+                    ):
+                        return Response({
+                            'message': f'User {new_co_lead.email} is already an executive in another community',
+                            'status': 'failed',
+                            'data': None
+                        }, status=status.HTTP_400_BAD_REQUEST)
 
-                    if new_secretary and new_secretary != instance.secretary:
-                        if ExecutiveMember.objects.filter(user=new_secretary).exclude(community=instance).exists():
-                            return Response({
-                                'message': f'User {new_secretary.email} is already an executive in another community',
-                                'status': 'failed',
-                                'data': None
-                            }, status=status.HTTP_400_BAD_REQUEST)
+                    if (
+                            new_secretary
+                            and new_secretary != instance.secretary
+                            and ExecutiveMember.objects.filter(user=new_secretary).exclude(community=instance).exists()
+                    ):
+                        return Response({
+                            'message': f'User {new_secretary.email} is already an executive in another community',
+                            'status': 'failed',
+                            'data': None
+                        }, status=status.HTTP_400_BAD_REQUEST)
 
                     updated_community = serializer.save()
 
@@ -231,12 +218,20 @@ class CommunityProfileViewSet(viewsets.ModelViewSet):
                     'data': None
                 }, status=status.HTTP_400_BAD_REQUEST)
 
+        except CommunityProfile.DoesNotExist:
+            return Response({
+                'message': 'Community not found',
+                'status': 'failed',
+                'data': None
+            }, status=status.HTTP_404_NOT_FOUND)
+
         except Exception as e:
             return Response({
                 'message': f'Error updating community: {str(e)}',
                 'status': 'failed',
                 'data': None
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     @swagger_auto_schema(
         tags=["Communities"],
         operation_summary="Retrieve all community profiles",
@@ -398,39 +393,57 @@ class CommunityProfileViewSet(viewsets.ModelViewSet):
                 'data': None
             }, status=status.HTTP_400_BAD_REQUEST)
 
-    def perfom_update(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            serializer = self.get_serializer(instance, data=request.data, partial=True)
-            if serializer.is_valid():
-                self.perfom_update(serializer)
-                return Response({
-                    "message": "Community updated successfully",
-                    "status": "success",
-                    "data": serializer.data
-                }, status=status.HTTP_200_OK)
+    @swagger_auto_schema(
+        method="get",
+        operation_summary="Search community by name",
+        operation_description="""
+        Searches for a community profile by its **exact name** (case-insensitive).  
 
-            error_messages = "\n".join(
-                f"{field}:{', '.join(errors)}" for field, errors in serializer.errors.item()
+        Query Parameter:  
+        - `name`: Community name to search (required).  
+        """,
+        manual_parameters=[
+            openapi.Parameter(
+                "name",
+                openapi.IN_QUERY,
+                description="Community name to search (case-insensitive)",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Community retrieved successfully",
+                examples={
+                    "application/json": {
+                        "message": "Community retrieved successfully",
+                        "status": "success",
+                        "data": {
+                            "id": 2,
+                            "name": "Cybersecurity Community",
+                            "community_lead": 3,
+                            "co_lead": 4,
+                            "secretary": 5,
+                            "email": "cybersec@example.com",
+                            "phone_number": "0700123456",
+                            "tech_stack": ["Python", "Django"]
+                        }
+                    }
+                }
+            ),
+            400: openapi.Response(
+                description="Missing or invalid query parameter / Not found",
+                examples={
+                    "application/json": {
+                        "message": 'community with name "AI Club" not found',
+                        "status": "failed",
+                        "data": None
+                    }
+                }
             )
-            return Response({
-                "message": f'community update failed:{error_messages}',
-                "status": "failed",
-                "data": None
-            }, status=status.HTTP_400_BAD_REQUEST)
-        except CommunityProfile.DoesNotExist:
-            return Response({
-                "message": f'Community not found',
-                "status": "failed",
-                "data": None
-            }, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({
-                "message": f'Error updating community: {str(e)}',
-                "status": "failed",
-                "data": None
-            }, status=status.HTTP_400_BAD_REQUEST)
-
+        },
+        tags=["Communities"]
+    )
     @action(detail=False, methods=['get'], url_path='search-community')
     def search_by_name(self, request, name=None):
         try:
@@ -463,6 +476,71 @@ class CommunityProfileViewSet(viewsets.ModelViewSet):
 
 
 class JoinCommunityView(APIView):
+
+    @swagger_auto_schema(
+        operation_summary="Join a community",
+        operation_description="""
+               Allows a user to join a specific community using the community ID and their email address.  
+
+               ### Rules:
+               - A user cannot join more than **3 communities**.  
+               - If the community does not exist, a **404 Not Found** response is returned.  
+               - On successful join, the community's total members count is updated.  
+
+               ### Request Body:
+               - **name**: Full name of the user joining the community.  
+               - **email**: User's email address.  
+
+               ### Responses:
+               - **201 Created**: User successfully joined the community.  
+               - **400 Bad Request**: Validation failed, user already in 3 communities, or invalid data.  
+               - **404 Not Found**: Community not found.  
+               """,
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["name", "email"],
+            properties={
+                'name': openapi.Schema(type=openapi.TYPE_STRING, description="User's full name"),
+                'email': openapi.Schema(type=openapi.TYPE_STRING, description="User's email address"),
+            },
+        ),
+        responses={
+            201: openapi.Response(
+                description="User successfully joined the community",
+                examples={
+                    "application/json": {
+                        "message": "Successfully joined the community!",
+                        "status": "success",
+                        "data": {
+                            "id": 1,
+                            "name": "Cybersecurity Community",
+                            "email": "Cybersecuriy.community@example.com",
+                            "total_members": 25,
+                            "tech_stack": ["Kali Linux", "Wireshark"]
+                        }
+                    }
+                },
+            ),
+            400: openapi.Response(
+                description="Invalid data or community limit reached",
+                examples={
+                    "application/json": {
+                        "message": "You cannot join more than 3 communities.",
+                        "status": "failed",
+                        "data": None
+                    }
+                },
+            ),
+            404: openapi.Response(
+                description="Community not found",
+                examples={
+                    "application/json": {
+                        "error": "Community not found"
+                    }
+                },
+            ),
+        },
+    )
     def post(self, request, *args, **kwargs):
         community_id = kwargs.get('pk')
         user_email = request.data.get('email')
@@ -506,6 +584,71 @@ class JoinCommunityView(APIView):
 
 
 class CommunityMembersView(APIView):
+
+    @swagger_auto_schema(
+        operation_summary="List community members",
+        operation_description="""
+            Retrieve all members belonging to a specific community.
+
+            ### Path Parameter:
+            - `pk` (integer): The unique ID of the community.
+
+            ### Success Response (200):
+            Returns a list of members in the given community, along with the total count.
+
+            Example response:
+            {
+                "status": "success",
+                "total_members": 2,
+                "data": [
+                    {
+                        "id": 1,
+                        "name": "John Doe",
+                        "email": "johndoe@example.com"
+                    },
+                    {
+                        "id": 2,
+                        "name": "Jane Smith",
+                        "email": "janesmith@example.com"
+                    }
+                ]
+            }
+
+            ### Error Response (404):
+            Returned if the given community does not exist.
+
+            Example response:
+            {
+                "status": "failed",
+                "message": "Community not found"
+            }
+            """,
+        tags=["Communities"],
+        responses={
+            200: openapi.Response(
+                description="List of community members",
+                examples={
+                    "application/json": {
+                        "status": "success",
+                        "total_members": 2,
+                        "data": [
+                            {"id": 1, "name": "John Doe", "email": "johndoe@example.com"},
+                            {"id": 2, "name": "Jane Smith", "email": "janesmith@example.com"}
+                        ]
+                    }
+                }
+            ),
+            404: openapi.Response(
+                description="Community not found",
+                examples={
+                    "application/json": {
+                        "status": "failed",
+                        "message": "Community not found"
+                    }
+                }
+            ),
+        }
+    )
     def get(self, request, pk=None):
         try:
             community = CommunityProfile.objects.get(id=pk)
