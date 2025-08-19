@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'drf_yasg',
     'events',
     'communities',
+    'communications',
 ]
 
 SITE_ID = 2

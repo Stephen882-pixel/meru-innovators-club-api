@@ -64,5 +64,6 @@ urlpatterns = [
     path('api/', include('Club.urls')),
     path('api/',include('events.urls')),
     path('api/',include('communities.urls')),
+    path('api/',include('communications.urls'))
 ]
 
