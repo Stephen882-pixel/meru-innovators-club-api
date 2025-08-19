@@ -639,7 +639,7 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
             500: "Internal server error"
         }
     )
-    @action(detail=False, methods=['get'], url_path='user-events/(?P<user_id>\d+)')
+    @action(detail=False, methods=['get'], url_path=r'user-events/(?P<user_id>\d+)')
     def get_events_by_user_id(self, request, user_id=None, *args, **kwargs):
         try:
             if not user_id:

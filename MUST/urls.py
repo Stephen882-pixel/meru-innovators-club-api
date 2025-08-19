@@ -16,7 +16,7 @@ schema_view = get_schema_view(
         default_version="v1",
         description="API documentation for Meru University Science Innovators Club",
         contact=openapi.Contact(email="innovatorsmust@gmail.com"),
-        license=openapi.License(name="BSD License"),
+        #license=openapi.License(name="BSD License"),
     ),
     public=True,
     permission_classes=[permissions.AllowAny]
@@ -29,27 +29,20 @@ router.register(r'testimonials', TestimonialViewSet)
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-    re_path(r'^swagger(?P<format>\.json|\.yaml)$',
-            schema_view.without_ui(cache_timeout=0), name='schema-json'),
+    re_path(r'^swagger(?P<format>\.json|\.yaml)$',schema_view.without_ui(cache_timeout=0), name='schema-json'),
 
-    path('swagger/',
-         schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('swagger/',schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
 
     # ReDoc UI
-    path('redoc/',
-         schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+    path('redoc/',schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 
 
-
-    #path('comments/', include('comments.urls')),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     
 
     path('', include(router.urls)),
-    #path('', include(event_router.urls)),
-    path('testimonies/', include('testimonials.urls')),
 
 
 
@@ -61,5 +54,6 @@ urlpatterns = [
     path('api/', include('feedback.urls')),
     path('api/', include('partners.urls')),
     path('api/comments/', include('comments.urls')),
+    path('api/testimonies/', include('testimonials.urls')),
 ]
 
