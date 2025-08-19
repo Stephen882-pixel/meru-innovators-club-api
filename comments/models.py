@@ -7,7 +7,6 @@ class Comment(models.Model):
     event = models.ForeignKey(Events, on_delete=models.CASCADE, related_name='comments')
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
-    # New field for replies. A comment with a non-null parent is a reply.
     parent = models.ForeignKey(
         'self',
         null=True,
