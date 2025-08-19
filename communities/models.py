@@ -124,6 +124,11 @@ class CommunityMember(models.Model):
 
 
 class Community(models.Model):
+    club = models.ForeignKey(
+        'Club.Club',
+        related_name="communities",
+        on_delete=models.CASCADE,blank=True,null=True
+    )
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     total_members = models.IntegerField(default=0)

@@ -1,5 +1,7 @@
 from django.shortcuts import get_object_or_404
-from rest_framework import generics,status,viewsets
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import status,viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import Club,ExecutiveMember
@@ -12,8 +14,46 @@ DEFAULT_CLUB_ID = 1
 
 class ClubDetailView(APIView):
 
+    @swagger_auto_schema(
+        tags=["Club"],
+        operation_summary="Create a new club",
+        operation_description="Creates a new club with the provided details.",
+        request_body=ClubSerializer,
+        responses={
+            201: openapi.Response(
+                description="Club created successfully",
+                examples={
+                    "application/json": {
+                        "message": "Club created successfully",
+                        "status": "success",
+                        "data": {
+                            "id": 1,
+                            "name": "Meru University Science Innovators Club",
+                            "about_us": "We are a community of technology enthusiasts dedicated to innovation.",
+                            "vision": "To become a leading hub for technological innovation.",
+                            "mission": "Empowering members through mentorship and hands-on projects.",
+                            "social_media": [
+                                {"platform": "LinkedIn", "url": "https://linkedin.com/company/innovators"},
+                                {"platform": "Twitter", "url": "https://twitter.com/innovators"}
+                            ],
+                            "communities": []
+                        }
+                    }
+                }
+            ),
+            400: openapi.Response(
+                description="Validation error",
+                examples={
+                    "application/json": {
+                        "message": "Club Creation failed: {'name': ['This field is required.']}",
+                        "status": "failed",
+                        "data": None
+                    }
+                }
+            )
+        }
+    )
     def post(self,request):
-    # Create a neww club
         serializer = ClubSerializer(data=request.data)
         if serializer.is_valid():
             club = serializer.save()
@@ -28,20 +68,74 @@ class ClubDetailView(APIView):
             'data':None
         },status=status.HTTP_400_BAD_REQUEST)
     """
-    Vieww to retrieve, update , or delete club details
+    View to retrieve, update , or delete club details
     Since we're only dealing with one club, we'll always use the default ID.
     """
 
+    @swagger_auto_schema(
+        tags=["Club"],
+        operation_summary="Retrieve club details",
+        operation_description="Retrieve details of the default club (includes nested communities, members, and sessions).",
+        responses={
+            200: openapi.Response(
+                description="Club retrieved successfully",
+                examples={
+                    "application/json": {
+                        "message": "Club retrieved successfully",
+                        "status": "success",
+                        "data": {
+                            "id": 1,
+                            "name": "Meru University Science Innovators Club",
+                            "about_us": "We are a community of technology enthusiasts dedicated to innovation.",
+                            "vision": "To become a leading hub for technological innovation.",
+                            "mission": "Empowering members through mentorship and hands-on projects.",
+                            "social_media": [
+                                {"platform": "LinkedIn", "url": "https://linkedin.com/company/innovators"},
+                                {"platform": "Twitter", "url": "https://twitter.com/innovators"}
+                            ],
+                            "communities": [
+                                {
+                                    "id": 1,
+                                    "name": "Cybersecurity Community",
+                                    "community_lead_details": {"id": 2, "name": "Alice Doe",
+                                                               "email": "alice@example.com"},
+                                    "co_lead_details": {"id": 3, "name": "Bob Smith", "email": "bob@example.com"},
+                                    "secretary_details": {"id": 4, "name": "Carol Jones", "email": "carol@example.com"},
+                                    "email": "cyber@example.com",
+                                    "phone_number": "0712345678",
+                                    "description": "A group focused on cybersecurity awareness.",
+                                    "founding_date": "2023-05-10",
+                                    "is_recruiting": True,
+                                    "tech_stack": ["Wireshark", "Nmap", "Burp Suite"],
+                                    "members": [{"id": 10, "name": "John Doe"}],
+                                    "total_members": 1,
+                                    "sessions": [
+                                        {
+                                            "day": "Monday",
+                                            "start_time": "18:00",
+                                            "end_time": "19:00",
+                                            "meeting_type": "VIRTUAL",
+                                            "location": "Google Meet"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                }
+            )
+        }
+    )
     def get(self, request):
         club = get_object_or_404(
             Club.objects.prefetch_related(
-                'communities',
-                'communities__community_lead',
-                'communities__co_lead',
-                'communities__secretary',
-                'communities__social_media',
-                'communities__members',
-                'communities__sessions'
+                'communities_from_communities_app',
+                'communities_from_communities_app__community_lead',
+                'communities_from_communities_app__co_lead',
+                'communities_from_communities_app__secretary',
+                'communities_from_communities_app__social_media',
+                'communities_from_communities_app__members',
+                'communities_from_communities_app__sessions'
             ), 
         id=DEFAULT_CLUB_ID
     )
@@ -52,6 +146,44 @@ class ClubDetailView(APIView):
             'data': serializer.data
         })
 
+    @swagger_auto_schema(
+        tags=["Club"],
+        operation_summary="Update club details",
+        operation_description="Update the default club's details. Requires full payload.",
+        request_body=ClubSerializer,
+        responses={
+            200: openapi.Response(
+                description="Club updated successfully",
+                examples={
+                    "application/json": {
+                        "message": "Club updated successfully",
+                        "status": "success",
+                        "data": {
+                            "id": 1,
+                            "name": "Updated Club Name",
+                            "about_us": "Updated about us text",
+                            "vision": "Updated vision",
+                            "mission": "Updated mission",
+                            "social_media": [
+                                {"platform": "LinkedIn", "url": "https://linkedin.com/company/updated"}
+                            ],
+                            "communities": []
+                        }
+                    }
+                }
+            ),
+            400: openapi.Response(
+                description="Validation error",
+                examples={
+                    "application/json": {
+                        "message": "Club update failed: {'name': ['This field is required.']}",
+                        "status": "failed",
+                        "data": None
+                    }
+                }
+            )
+        }
+    )
     def put(self, request):
         club = get_object_or_404(Club, id=DEFAULT_CLUB_ID)
         serializer = ClubSerializer(club, data=request.data)
@@ -67,7 +199,23 @@ class ClubDetailView(APIView):
             'status': 'failed',
             'data': None
         }, status=status.HTTP_400_BAD_REQUEST)
-    
+
+    @swagger_auto_schema(
+        tags=["Club"],
+        operation_summary="Delete the club",
+        operation_description="Delete the default club. This action is irreversible.",
+        responses={
+            204: openapi.Response(
+                description="Club deleted successfully",
+                examples={
+                    "application/json": {"message": "Club deleted successfully", "status": "success", "data": None}}
+            ),
+            404: openapi.Response(
+                description="Club not found",
+                examples={"application/json": {"message": "Not found.", "status": "failed", "data": None}}
+            )
+        }
+    )
     def delete(self, request):
         club = get_object_or_404(Club, id=DEFAULT_CLUB_ID)
         club.delete()
@@ -76,6 +224,84 @@ class ClubDetailView(APIView):
             'status': 'success',
             'data': None
         }, status=status.HTTP_204_NO_CONTENT)
+
+
+    @swagger_auto_schema(
+        tags=["Club"],
+        operation_summary="Partially update club details",
+        operation_description=(
+            "Partially update the default club's details. "
+            "Only the provided fields will be updated."
+        ),
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "name": openapi.Schema(type=openapi.TYPE_STRING, example="Updated Club Name"),
+                "about_us": openapi.Schema(type=openapi.TYPE_STRING, example="Updated about us text"),
+                "vision": openapi.Schema(type=openapi.TYPE_STRING, example="Updated vision"),
+                "mission": openapi.Schema(type=openapi.TYPE_STRING, example="Updated mission"),
+                "social_media": openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            "platform": openapi.Schema(type=openapi.TYPE_STRING, example="LinkedIn"),
+                            "url": openapi.Schema(type=openapi.TYPE_STRING, example="https://linkedin.com/company/updated")
+                        }
+                    )
+                ),
+            },
+            required=[]
+        ),
+        responses={
+            200: openapi.Response(
+                description="Club partially updated successfully",
+                examples={
+                    "application/json": {
+                        "message": "Club updated successfully",
+                        "status": "success",
+                        "data": {
+                            "id": 1,
+                            "name": "Updated Club Name",
+                            "about_us": "Updated about us text",
+                            "vision": "Updated vision",
+                            "mission": "Updated mission",
+                            "social_media": [
+                                {"platform": "LinkedIn", "url": "https://linkedin.com/company/updated"}
+                            ],
+                            "communities": []
+                        }
+                    }
+                }
+            ),
+            400: openapi.Response(
+                description="Validation error",
+                examples={
+                    "application/json": {
+                        "message": "Club update failed: {'name': ['This field must be unique.']}",
+                        "status": "failed",
+                        "data": None
+                    }
+                }
+            )
+        }
+    )
+    def patch(self, request):
+        club = get_object_or_404(Club, id=DEFAULT_CLUB_ID)
+        serializer = ClubSerializer(club, data=request.data, partial=True)  # 👈 partial=True
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "message": "Club updated successfully",
+                "status": "success",
+                "data": serializer.data
+            })
+        return Response({
+            "message": f"Club update failed: {serializer.errors}",
+            "status": "failed",
+            "data": None
+        }, status=status.HTTP_400_BAD_REQUEST)
+
 
 class ExecutiveMemberViewSet(viewsets.ModelViewSet):
     queryset = ExecutiveMember.objects.all()
