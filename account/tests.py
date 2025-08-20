@@ -81,3 +81,20 @@ class RegisterViewTests(BaseAuthTestCase):
 
         self.assertEqual(response.status_code,status.HTTP_400_BAD_REQUEST)
         self.assertIn('Username already exists',response.data['message'])
+
+    def test_duplicate_email_registration(self):
+        User.objects.create_user(username='othername',email='john.doe@example.com')
+
+        response = self.client.post(reverse('register'),self.user_data)
+        self.assertEqual(response.status_code,status.HTTP_400_BAD_REQUEST)
+        self.assertIn('Email already exists', response.data['message'])
+
+    def test_invalid_password_registration(self):
+        invalid_data = self.user_data.copy()
+        invalid_data['password'] = 'weak'
+
+        response = self.client.post(reverse('register'),invalid_data)
+
+        self.assertEqual(response.status_code,status.HTTP_400_BAD_REQUEST)
+        self.assertIn('errors',response.data)
+
