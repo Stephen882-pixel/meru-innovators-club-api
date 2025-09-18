@@ -1,4 +1,7 @@
 import csv
+import hashlib
+import json
+
 import boto3
 from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
@@ -18,6 +21,16 @@ import traceback
 from drf_yasg import openapi
 # Create your views here.
 
+def generate_events_cache_key(request):
+    query_params = request.GET.dict()
+    cache_key_data = {
+        'endpoint': 'events_list',
+        'params': query_params,
+        'page': query_params.get('page',1),
+        'page_size': query_params.get('page_size','10')
+    }
+    key_string = json.dumps(cache_key_data,sort_keys=True)
+    return f"events_list_{hashlib.md5(key_string.encode()).hexdigest()}"
 
 
 class EventPagination(PageNumberPagination):
