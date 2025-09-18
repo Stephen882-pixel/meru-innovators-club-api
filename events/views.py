@@ -49,6 +49,11 @@ def invalidate_events_cache():
 def invalidate_event_cache(event_id):
     cache.delete(generate_event_detail_cache_key(event_id))
 
+def invalidate_user_registration_cache(email=None,user_id=None):
+    if email:
+        cache.delete(generate_user_registration_cache_key(email,'email'))
+    if user_id:
+        cache.delete(generate_user_registration_cache_key(user_id,'user_id'))
 
 
 class EventPagination(PageNumberPagination):
