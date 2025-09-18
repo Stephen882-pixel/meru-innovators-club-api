@@ -18,6 +18,8 @@ import traceback
 from drf_yasg import openapi
 # Create your views here.
 
+
+
 class EventPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
