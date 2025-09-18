@@ -25,7 +25,9 @@ import hashlib
 import json
 # Create your views here.
 
-
+CACHE_TIMEOUT_SHORT = 5 * 60
+CACHE_TIMEOUT_MEDIUM = 15 * 60
+CACHE_TIMEOUT_LONG = 60 * 60
 
 # CACHE KEY GENERATIONS
 def generate_events_cache_key(request):
