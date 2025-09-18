@@ -24,6 +24,7 @@ cython_debug/
 
 # Virtual environments
 .venv/
+.virtualenv/
 venv/
 ENV/
 env/
