@@ -37,6 +37,8 @@ __pypackages__/
 .pdm-python
 .pdm-build/
 
+virtualenv/
+
 # Django
 db.sqlite3
 db.sqlite3-journal
