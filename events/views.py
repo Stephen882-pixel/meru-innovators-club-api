@@ -21,6 +21,8 @@ import traceback
 from drf_yasg import openapi
 # Create your views here.
 
+
+# CACHE KEY GENERATIONS
 def generate_events_cache_key(request):
     query_params = request.GET.dict()
     cache_key_data = {
@@ -37,6 +39,12 @@ def generate_event_detail_cache_key(event_id):
 
 def generate_user_registration_cache_key(user_identifier,identifier_type='email'):
     return f"user_registrations_{identifier_type}_{hashlib.md5(str(user_identifier).encode()).hexdigest()}"
+
+# CACHE INVALIDATION HELPERS
+
+def invalidate_events_cache():
+    cache_keys_pattern = ["events_list_*"]
+
 
 
 class EventPagination(PageNumberPagination):
