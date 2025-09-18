@@ -32,6 +32,10 @@ def generate_events_cache_key(request):
     key_string = json.dumps(cache_key_data,sort_keys=True)
     return f"events_list_{hashlib.md5(key_string.encode()).hexdigest()}"
 
+def generate_event_detail_cache_key(event_id):
+    return f"event_detail_{event_id}"
+
+
 
 class EventPagination(PageNumberPagination):
     page_size = 10
