@@ -46,6 +46,10 @@ def invalidate_events_cache():
     cache_keys_pattern = ["events_list_*"]
 
 
+def invalidate_event_cache(event_id):
+    cache.delete(generate_event_detail_cache_key(event_id))
+
+
 
 class EventPagination(PageNumberPagination):
     page_size = 10
