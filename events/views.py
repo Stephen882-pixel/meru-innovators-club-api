@@ -35,6 +35,8 @@ def generate_events_cache_key(request):
 def generate_event_detail_cache_key(event_id):
     return f"event_detail_{event_id}"
 
+def generate_user_registration_cache_key(user_identifier,identifier_type='email'):
+    return f"user_registrations_{identifier_type}_{hashlib.md5(str(user_identifier).encode()).hexdigest()}"
 
 
 class EventPagination(PageNumberPagination):
