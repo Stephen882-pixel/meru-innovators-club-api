@@ -201,7 +201,7 @@ class EventViewSet(viewsets.ModelViewSet):
             organizer=event_data['organizer'],
             contact_email=event_data['contact_email'],
             is_virtual=event_data['is_virtual'],
-            image_url=f"event_images/{file.name}"  # Store the image path in the event
+            #image_url=f"event_images/{file.name}"  # Store the image path in the event
         )
 
         invalidate_events_list_cache()
@@ -213,7 +213,7 @@ class EventViewSet(viewsets.ModelViewSet):
             'status': 'success',
             "data": {
                 "id": event.id,
-                "image_url": image_url,
+                #"image_url": image_url,
                 "name": event.name,
                 "category": event.category,
                 "title": event.title,
