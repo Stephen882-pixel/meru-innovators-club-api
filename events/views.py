@@ -1,4 +1,7 @@
 import csv
+import hashlib
+import json
+
 import boto3
 from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
@@ -16,7 +19,51 @@ s3_client = boto3.client('s3')
 from rest_framework import viewsets,status
 import traceback
 from drf_yasg import openapi
+from django.core.cache import cache
+from django.views.decorators.cache import cache_page
+import hashlib
+import json
 # Create your views here.
+
+CACHE_TIMEOUT_SHORT = 5 * 60
+CACHE_TIMEOUT_MEDIUM = 15 * 60
+CACHE_TIMEOUT_LONG = 60 * 60
+
+# CACHE KEY GENERATIONS
+def generate_events_cache_key(request):
+    query_params = request.GET.dict()
+    cache_key_data = {
+        'endpoint': 'events_list',
+        'params': query_params,
+        'page': query_params.get('page',1),
+        'page_size': query_params.get('page_size','10')
+    }
+    key_string = json.dumps(cache_key_data,sort_keys=True)
+    return f"events_list_{hashlib.md5(key_string.encode()).hexdigest()}"
+
+def generate_event_detail_cache_key(event_id):
+    return f"event_detail_{event_id}"
+
+def generate_user_registration_cache_key(user_identifier,identifier_type='email'):
+    return f"user_registrations_{identifier_type}_{hashlib.md5(str(user_identifier).encode()).hexdigest()}"
+
+# CACHE INVALIDATION HELPERS
+
+def invalidate_events_cache():
+    cache_keys_pattern = ["events_list_*"]
+
+
+def invalidate_event_cache(event_id):
+    cache.delete(generate_event_detail_cache_key(event_id))
+
+def invalidate_user_registration_cache(email=None,user_id=None):
+    if email:
+        cache.delete(generate_user_registration_cache_key(email,'email'))
+    if user_id:
+        cache.delete(generate_user_registration_cache_key(user_id,'user_id'))
+
+
+
 
 class EventPagination(PageNumberPagination):
     page_size = 10
@@ -220,6 +267,15 @@ class EventViewSet(viewsets.ModelViewSet):
     )
     @action(detail=False, methods=['get'], url_path='list', url_name='list-events')
     def list_events(self, request, *args, **kwargs):
+
+        cache_key = generate_events_cache_key(request)
+        cached_response = cache.get(cache_key)
+        if cached_response:
+            print(f"Cache hit for key: {cache_key}")
+            return Response(cached_response)
+        print(f"Cache miss for key: {cache_key}")
+
+
         queryset = self.filter_queryset(self.get_queryset())
         for event in queryset:
             print(f"Event {event.id} has image_url in DB: {event.image_url}")
@@ -232,18 +288,21 @@ class EventViewSet(viewsets.ModelViewSet):
                 print(f"Serialized event {item['id']} has image_url: {item.get('image_url')}")
 
             return self.get_paginated_response(serializer.data)
-        serializer = self.get_serializer(queryset, many=True)
+        else:
+            serializer = self.get_serializer(queryset, many=True)
 
-        return Response({
-            'message': 'Events retrieved successfully',
-            'status': 'success',
-            'data': {
-                'count': queryset.count(),
-                'next': None,
-                'previous': None,
-                'results': serializer.data
-            }
-        }, status=status.HTTP_200_OK)
+            return Response({
+                'message': 'Events retrieved successfully',
+                'status': 'success',
+                'data': {
+                    'count': queryset.count(),
+                    'next': None,
+                    'previous': None,
+                    'results': serializer.data
+                }
+            }, status=status.HTTP_200_OK)
+
+
 
     @swagger_auto_schema(
         tags=["Events"],

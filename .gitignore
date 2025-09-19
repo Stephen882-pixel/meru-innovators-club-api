@@ -24,6 +24,7 @@ cython_debug/
 
 # Virtual environments
 .venv/
+.virtualenv/
 venv/
 ENV/
 env/
@@ -35,6 +36,8 @@ __pypackages__/
 .pdm.toml
 .pdm-python
 .pdm-build/
+
+virtualenv/
 
 # Django
 db.sqlite3

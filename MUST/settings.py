@@ -43,8 +43,6 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.github',
-    # 'oauth2_provider',
-    'sociallogins',
     'corsheaders',
     'comments',
     'feedback',
@@ -92,6 +90,19 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+
+# DATABASES = {
+#     'default':{
+#         'ENGINE':'django.db.backends.postgresql',
+#         'NAME':os.environ.get('DB_NAME','postgres'),
+#         'USER':os.environ.get('DB_USER','postgres'),
+#         'PASSWORD':os.environ.get('DB_PASSWORD','postgres'),
+#         'HOST':os.environ.get('DB_HOST','localhost'),
+#         'POST': os.environ.get('DB_PORT','5432')
+#     }
+# }
+
 
 
 # Authentication and Password Validation
@@ -195,4 +206,17 @@ LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 JWT_SECRET = os.environ.get('JWT_SECRET')
 JWT_ALGORITHM = "HS256"
+
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'KEY_PREFIX':'events_api',
+        'TIMEOUT': 300,
+    }
+}
 
