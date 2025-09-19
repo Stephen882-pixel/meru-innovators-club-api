@@ -316,6 +316,7 @@ class EventViewSet(viewsets.ModelViewSet):
 
         cache_key = generate_events_cache_key(request)
         cached_response = cache.get(cache_key)
+
         if cached_response:
             print(f"Cache hit for key: {cache_key}")
             return Response(cached_response)
@@ -330,23 +331,27 @@ class EventViewSet(viewsets.ModelViewSet):
 
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            for item in serializer.data:
-                print(f"Serialized event {item['id']} has image_url: {item.get('image_url')}")
+            paginated_response = self.get_paginated_response(serializer.data)
 
-            return self.get_paginated_response(serializer.data)
+            cache.set(cache_key,paginated_response.data,CACHE_TIMEOUT_MEDIUM)
+            print(f"Cached response for key: {cache_key}")
+            return paginated_response
         else:
             serializer = self.get_serializer(queryset, many=True)
-
-            return Response({
-                'message': 'Events retrieved successfully',
-                'status': 'success',
-                'data': {
+            response_data = {
+                'message':'Events retrieved successfully',
+                'status':'success',
+                'data':{
                     'count': queryset.count(),
                     'next': None,
                     'previous': None,
                     'results': serializer.data
                 }
-            }, status=status.HTTP_200_OK)
+            }
+            cache.set(cache_key,response_data,CACHE_TIMEOUT_MEDIUM)
+            print(f"Cached response for key: {cache_key}")
+
+            return Response(response_data,status=status.HTTP_200_OK)
 
 
 
