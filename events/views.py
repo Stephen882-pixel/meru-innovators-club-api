@@ -112,7 +112,7 @@ class EventPagination(PageNumberPagination):
 
     def get_paginated_response(self, data):
         return Response({
-            'message':'Events retrieved successfuly',
+            'message':'Events retrieved successfully',
             'status':'success',
             'data':{
                 'count':self.page.paginator.count,
@@ -121,9 +121,6 @@ class EventPagination(PageNumberPagination):
                 'results':data
             }
         })
-
-def generate_s3_image_url(bucket_name, object_key):
-    return f"https://{bucket_name}.s3.ap-southeast-2.amazonaws.com/{object_key}"
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -167,28 +164,6 @@ class EventViewSet(viewsets.ModelViewSet):
         print("Files in request:", request.FILES)
         print("Data in request:", request.data)
         print("Content-Type:", request.content_type)
-        file = request.FILES.get('image')
-        if not file:
-            return JsonResponse({
-                "message": "No image provided",
-                "status": "error"
-            }, status=400)
-
-        bucket_name = settings.AWS_STORAGE_BUCKET_NAME
-        object_key = f"event_images/{file.name}"
-        try:
-            s3_client.put_object(
-                Bucket=bucket_name,
-                Key=object_key,
-                Body=file.read(),
-                ContentType=file.content_type
-            )
-        except Exception as e:
-            return JsonResponse({
-                "message": f"Failed to upload image to S3: {str(e)}",
-                "status": "error"
-            }, status=500)
-
 
         event_data = request.data
         event = Events.objects.create(
@@ -201,19 +176,15 @@ class EventViewSet(viewsets.ModelViewSet):
             organizer=event_data['organizer'],
             contact_email=event_data['contact_email'],
             is_virtual=event_data['is_virtual'],
-            #image_url=f"event_images/{file.name}"  # Store the image path in the event
         )
 
         invalidate_events_list_cache()
-
-        image_url = generate_s3_image_url(bucket_name, object_key)
 
         response_data = {
             'message': 'Event Created successfully',
             'status': 'success',
             "data": {
                 "id": event.id,
-                #"image_url": image_url,
                 "name": event.name,
                 "category": event.category,
                 "title": event.title,
@@ -247,49 +218,18 @@ class EventViewSet(viewsets.ModelViewSet):
     def update_event(self, request, *args, **kwargs):
         partial = kwargs.get('partial', request.method == 'PATCH')
         instance = self.get_object()
-        file = request.FILES.get('image')
-        if file:
-            bucket_name = settings.AWS_STORAGE_BUCKET_NAME
-            object_key = f"event_images/{file.name}"
 
-            try:
-                s3_client.put_object(
-                    Bucket=bucket_name,
-                    Key=object_key,
-                    Body=file.read(),
-                    ContentType=file.content_type
-                )
-                mutable_data = request.data.copy()
-                mutable_data['image_url'] = f"event_images/{file.name}"
-
-
-                serializer = self.get_serializer(instance, data=mutable_data, partial=partial)
-            except Exception as e:
-                return Response({
-                    "message": f"Failed to upload image to S3: {str(e)}",
-                    "status": "error",
-                    "data": None
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        else:
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
 
         if serializer.is_valid():
             event_instance = serializer.save()
 
             invalidate_events_list_cache()
             invalidate_event_detail_cache(instance.id)
-
-            if file:
-                image_url = generate_s3_image_url(bucket_name, object_key)
-                response_data = EventsSerializer(event_instance).data
-                response_data['image_url'] = image_url
-            else:
-                response_data = EventsSerializer(event_instance).data
-
             return Response({
                 'message': 'Event Updated Successfully',
                 'status': 'success',
-                'data': response_data
+                'data': serializer.data
             }, status=status.HTTP_200_OK)
 
         return Response({
@@ -324,8 +264,6 @@ class EventViewSet(viewsets.ModelViewSet):
 
 
         queryset = self.filter_queryset(self.get_queryset())
-        for event in queryset:
-            print(f"Event {event.id} has image_url in DB: {event.image_url}")
 
         page = self.paginate_queryset(queryset)
 
@@ -607,6 +545,11 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
                     registration = serializer.save()
 
                 event = registration.event
+
+                invalidate_user_registration_cache(email=email)
+                if request.user.is_authenticated:
+                    invalidate_user_registration_cache(user_id=request.user)
+                invalidate_event_registration_cache(event_pk)
 
                 return Response({
                     "message": "successfully registered for the event",
