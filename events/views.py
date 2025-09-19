@@ -70,6 +70,17 @@ def invalidate_event_detail_cache(event_id):
     cache.delete(cache_key)
     print(f"Invalidate event detail cache for event {event_id}")
 
+def invalidate_user_registration_cache(email=None,user_id=None):
+    if email:
+        cache_key = generate_user_registration_cache_key(email,'email')
+        cache.delete(cache_key)
+        print(f"Invalidated registration cache for email: {email}")
+
+    if user_id:
+        cache_key = generate_user_registration_cache_key(user_id,'user_id')
+        cache.delete(cache_key)
+        print(f"Invalidated registration cache for user_id: {user_id}")
+
 
 class EventPagination(PageNumberPagination):
     page_size = 10
