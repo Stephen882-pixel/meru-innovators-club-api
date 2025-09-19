@@ -63,6 +63,8 @@ def invalidate_user_registration_cache(email=None,user_id=None):
         cache.delete(generate_user_registration_cache_key(user_id,'user_id'))
 
 
+
+
 class EventPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
@@ -265,6 +267,15 @@ class EventViewSet(viewsets.ModelViewSet):
     )
     @action(detail=False, methods=['get'], url_path='list', url_name='list-events')
     def list_events(self, request, *args, **kwargs):
+
+        cache_key = generate_events_cache_key(request)
+        cached_response = cache.get(cache_key)
+        if cached_response:
+            print(f"Cache hit for key: {cache_key}")
+            return Response(cached_response)
+        print(f"Cache miss for key: {cache_key}")
+
+
         queryset = self.filter_queryset(self.get_queryset())
         for event in queryset:
             print(f"Event {event.id} has image_url in DB: {event.image_url}")
@@ -277,18 +288,21 @@ class EventViewSet(viewsets.ModelViewSet):
                 print(f"Serialized event {item['id']} has image_url: {item.get('image_url')}")
 
             return self.get_paginated_response(serializer.data)
-        serializer = self.get_serializer(queryset, many=True)
+        else:
+            serializer = self.get_serializer(queryset, many=True)
 
-        return Response({
-            'message': 'Events retrieved successfully',
-            'status': 'success',
-            'data': {
-                'count': queryset.count(),
-                'next': None,
-                'previous': None,
-                'results': serializer.data
-            }
-        }, status=status.HTTP_200_OK)
+            return Response({
+                'message': 'Events retrieved successfully',
+                'status': 'success',
+                'data': {
+                    'count': queryset.count(),
+                    'next': None,
+                    'previous': None,
+                    'results': serializer.data
+                }
+            }, status=status.HTTP_200_OK)
+
+
 
     @swagger_auto_schema(
         tags=["Events"],
