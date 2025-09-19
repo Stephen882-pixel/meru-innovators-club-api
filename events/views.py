@@ -275,6 +275,10 @@ class EventViewSet(viewsets.ModelViewSet):
 
         if serializer.is_valid():
             event_instance = serializer.save()
+
+            invalidate_events_list_cache()
+            invalidate_event_detail_cache(instance.id)
+
             if file:
                 image_url = generate_s3_image_url(bucket_name, object_key)
                 response_data = EventsSerializer(event_instance).data
