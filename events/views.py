@@ -1,7 +1,4 @@
 import csv
-import hashlib
-import json
-
 import boto3
 from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
@@ -43,6 +40,10 @@ def generate_events_cache_key(request):
 
 def generate_event_detail_cache_key(event_id):
     return f"event_detail_{event_id}"
+
+def generate_event_by_name_cache_key(event_name):
+    name_hash = hashlib.md5(event_name.lower().encode()).hexdigest()
+    return f"event_by_name_{name_hash}"
 
 def generate_user_registration_cache_key(user_identifier,identifier_type='email'):
     return f"user_registrations_{identifier_type}_{hashlib.md5(str(user_identifier).encode()).hexdigest()}"
