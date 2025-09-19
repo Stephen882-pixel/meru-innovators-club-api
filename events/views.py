@@ -45,26 +45,25 @@ def generate_event_by_name_cache_key(event_name):
     name_hash = hashlib.md5(event_name.lower().encode()).hexdigest()
     return f"event_by_name_{name_hash}"
 
+
 def generate_user_registration_cache_key(user_identifier,identifier_type='email'):
     return f"user_registrations_{identifier_type}_{hashlib.md5(str(user_identifier).encode()).hexdigest()}"
 
+def generate_event_registrations_cache_key(event_id,page=1,page_size=10):
+    return f"event_registrations_{event_id}_page_{page}_size_{page_size}"
+
 # CACHE INVALIDATION HELPERS
 
-def invalidate_events_cache():
-    cache_keys_pattern = ["events_list_*"]
+def invalidate_events_list_cache():
+    from django_redis import get_redis_connection
+    redis_conn = get_redis_connection("default")
 
+    pattern = f"{settings.CACHES['default']['KEY_PREFIX']}:*events_list_*"
+    keys = redis_conn.keys(pattern)
 
-def invalidate_event_cache(event_id):
-    cache.delete(generate_event_detail_cache_key(event_id))
-
-def invalidate_user_registration_cache(email=None,user_id=None):
-    if email:
-        cache.delete(generate_user_registration_cache_key(email,'email'))
-    if user_id:
-        cache.delete(generate_user_registration_cache_key(user_id,'user_id'))
-
-
-
+    if keys:
+        redis_conn.delete(*keys)
+    print(f"Invalidated {len(keys)} events list cache entries")
 
 class EventPagination(PageNumberPagination):
     page_size = 10
