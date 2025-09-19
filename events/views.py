@@ -65,6 +65,12 @@ def invalidate_events_list_cache():
         redis_conn.delete(*keys)
     print(f"Invalidated {len(keys)} events list cache entries")
 
+def invalidate_event_detail_cache(event_id):
+    cache_key = generate_event_detail_cache_key(event_id)
+    cache.delete(cache_key)
+    print(f"Invalidate event detail cache for event {event_id}")
+
+
 class EventPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
