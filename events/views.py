@@ -204,6 +204,8 @@ class EventViewSet(viewsets.ModelViewSet):
             image_url=f"event_images/{file.name}"  # Store the image path in the event
         )
 
+        invalidate_events_list_cache()
+
         image_url = generate_s3_image_url(bucket_name, object_key)
 
         response_data = {
