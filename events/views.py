@@ -633,6 +633,15 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
                     'status': 'failed',
                     'data': None
                 }, status=status.HTTP_400_BAD_REQUEST)
+
+            cache_key = generate_user_registration_cache_key(email,'email')
+            cached_data = cache.get(cache_key)
+
+            if cached_data:
+                print(f"Cache hit for user registrations: {email}")
+                return Response(cached_data,status=status.HTTP_200_OK)
+            print(f"Cache miss for user registrations: {email}")
+
             registrations = EventRegistration.objects.filter(email=email)
 
             if not registrations.exists():
@@ -642,11 +651,16 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
                     'data': []
                 }, status=status.HTTP_200_OK)
             serializer = EventRegistrationSerializer(registrations, many=True)
-            return Response({
-                'message': 'Registered events retrieved successfully',
-                'status': 'success',
-                'data': serializer.data
-            }, status=status.HTTP_200_OK)
+            response_data = {
+                'message':'Registered events retrieved successfully',
+                'status':'success',
+                'data':serializer.data
+            }
+
+            cache.set(cache_key,response_data,CACHE_TIMEOUT_MEDIUM)
+            print(f"Cached user registrations for: {email}")
+
+            return Response(response_data,status=status.HTTP_200_OK)
 
         except Exception as e:
             return Response({
