@@ -81,6 +81,18 @@ def invalidate_user_registration_cache(email=None,user_id=None):
         cache.delete(cache_key)
         print(f"Invalidated registration cache for user_id: {user_id}")
 
+def invalidate_event_registration_cache(event_id):
+    from django_redis import get_redis_connection
+    redis_conn = get_redis_connection('default')
+
+    pattern = f"{settings.CACHES['default']['KEY_PREFIX']}:*event_registrations_{event_id}_*"
+    keys = redis_conn(pattern)
+
+    if keys:
+        redis_conn.delete(*keys)
+    print(f"Invalidated {len(keys)} event registration cache entries for event {event_id}")
+
+
 
 class EventPagination(PageNumberPagination):
     page_size = 10
