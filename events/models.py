@@ -14,19 +14,28 @@ class Events(models.Model):
         ('IoT', 'Internate of Things'),
         ('CLOUD', 'Cloud Community')
     ]
-    name = models.CharField(max_length=100)
-    category = models.CharField(max_length=50, choices=CATEGORY_CHOICE, null=False, default='Web Development')
+    name = models.CharField(max_length=100,db_index=True)
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICE, null=False, default='Web Development',db_index=True)
     title = models.CharField(max_length=200)
     description = models.TextField()
     #image_url = models.URLField(default="event_images/default.png",null=True)  # S3 image URL will be stored here
-    date = models.DateTimeField()
+    date = models.DateTimeField(db_index=True)
     location = models.CharField(max_length=255)
     organizer = models.CharField(max_length=100)
     contact_email = models.EmailField(null=True, blank=True)
     is_virtual = models.BooleanField(default=False)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['category','date']),
+            models.Index(fields=['date','location']),
+            models.Index(fields=['-date'])
+        ]
+
     def __str__(self):
         return self.title
+
+
 
 
 class EventRegistration(models.Model):
@@ -39,16 +48,24 @@ class EventRegistration(models.Model):
     ]
 
     uid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='event_registrations_events_app', null=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='event_registrations_events_app', null=True,db_index=True)
     event = models.ForeignKey('Events', on_delete=models.CASCADE, related_name='registrations')
     full_name = models.CharField(max_length=200)
-    email = models.EmailField(validators=[EmailValidator()])
+    email = models.EmailField(validators=[EmailValidator()],db_index=True)
     course = models.CharField(max_length=200)
     educational_level = models.CharField(max_length=20, choices=EDUCATION_LEVELS)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     expectations = models.CharField(max_length=100, null=True)
-    registration_timestamp = models.DateTimeField(auto_now_add=True)
-    ticket_number = models.UUIDField(default=uuid.uuid4, unique=True)
+    registration_timestamp = models.DateTimeField(auto_now_add=True,db_index=True)
+    ticket_number = models.UUIDField(default=uuid.uuid4, unique=True,db_index=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['event','registration_timestamp']),
+            models.Index(fields=['user','event']),
+            models.Index(fields=['registration_timestamp'])
+        ]
+        unique_together = ['user','event']
 
     def __str__(self):
         return f"{self.full_name} - {self.event.name}"

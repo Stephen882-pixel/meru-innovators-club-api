@@ -84,12 +84,12 @@ WSGI_APPLICATION = 'MUST.wsgi.application'
 
 
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 
 
 # DATABASES = {
@@ -102,6 +102,34 @@ DATABASES = {
 #         'POST': os.environ.get('DB_PORT','5432')
 #     }
 # }
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'must_innovators',
+        'USER': 'root',
+        'PASSWORD': 'Kundan@1234',
+        'HOST': 'localhost',
+        'PORT': '3306',
+        'CONN_MAX_AGE':600,
+        'CONN_HEALTH_CHECKS': True,
+        'OPTIONS':{
+            'init_command':"SET sql_mode='STRICT_TRANS_TABLES'",
+            'charset':'utf8mb4',
+            'use_unicode':True,
+            'autocommit':True,
+
+            'connect_timeout':10,
+            'read_timeout':30,
+            'write_timeout':30,
+
+            'sql_mode':'TRADITIONAL',
+            'isolation_level': 'read committed',
+        },
+        'ATOMIC_REQUESTS':True
+    }
+}
+
 
 
 
