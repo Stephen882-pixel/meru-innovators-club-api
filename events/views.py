@@ -1,7 +1,4 @@
 import csv
-import hashlib
-import json
-
 import boto3
 from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
@@ -44,25 +41,68 @@ def generate_events_cache_key(request):
 def generate_event_detail_cache_key(event_id):
     return f"event_detail_{event_id}"
 
+def generate_event_by_name_cache_key(event_name):
+    name_hash = hashlib.md5(event_name.lower().encode()).hexdigest()
+    return f"event_by_name_{name_hash}"
+
+
 def generate_user_registration_cache_key(user_identifier,identifier_type='email'):
     return f"user_registrations_{identifier_type}_{hashlib.md5(str(user_identifier).encode()).hexdigest()}"
 
+def generate_event_registrations_cache_key(event_id,page=1,page_size=10):
+    return f"event_registrations_{event_id}_page_{page}_size_{page_size}"
+
 # CACHE INVALIDATION HELPERS
 
-def invalidate_events_cache():
-    cache_keys_pattern = ["events_list_*"]
+def invalidate_events_list_cache():
+    from django_redis import get_redis_connection
+    redis_conn = get_redis_connection("default")
 
+    pattern = f"{settings.CACHES['default']['KEY_PREFIX']}:*events_list_*"
+    keys = redis_conn.keys(pattern)
 
-def invalidate_event_cache(event_id):
-    cache.delete(generate_event_detail_cache_key(event_id))
+    if keys:
+        redis_conn.delete(*keys)
+    print(f"Invalidated {len(keys)} events list cache entries")
+
+def invalidate_event_detail_cache(event_id):
+    cache_key = generate_event_detail_cache_key(event_id)
+    cache.delete(cache_key)
+    print(f"Invalidate event detail cache for event {event_id}")
 
 def invalidate_user_registration_cache(email=None,user_id=None):
     if email:
-        cache.delete(generate_user_registration_cache_key(email,'email'))
+        cache_key = generate_user_registration_cache_key(email,'email')
+        cache.delete(cache_key)
+        print(f"Invalidated registration cache for email: {email}")
+
     if user_id:
-        cache.delete(generate_user_registration_cache_key(user_id,'user_id'))
+        cache_key = generate_user_registration_cache_key(user_id,'user_id')
+        cache.delete(cache_key)
+        print(f"Invalidated registration cache for user_id: {user_id}")
+
+def invalidate_event_registration_cache(event_id):
+    from django_redis import get_redis_connection
+    redis_conn = get_redis_connection('default')
+
+    pattern = f"{settings.CACHES['default']['KEY_PREFIX']}:*event_registrations_{event_id}_*"
+    keys = redis_conn.keys(pattern)
+
+    if keys:
+        redis_conn.delete(*keys)
+    print(f"Invalidated {len(keys)} event registration cache entries for event {event_id}")
 
 
+def invalidate_all_user_registration_cache():
+    from django_redis import get_redis_connection
+    redis_conn = get_redis_connection("default")
+
+    pattern = f"{settings.CACHES['default']['KEY_PREFIX']}:*user_registrations_*"
+    keys = redis_conn.keys(pattern)
+
+    if keys:
+        redis_conn.delete(*keys)
+    print(f"Invalidated {len(keys)} user registration cache entries")
 
 
 class EventPagination(PageNumberPagination):
@@ -72,7 +112,7 @@ class EventPagination(PageNumberPagination):
 
     def get_paginated_response(self, data):
         return Response({
-            'message':'Events retrieved successfuly',
+            'message':'Events retrieved successfully',
             'status':'success',
             'data':{
                 'count':self.page.paginator.count,
@@ -81,9 +121,6 @@ class EventPagination(PageNumberPagination):
                 'results':data
             }
         })
-
-def generate_s3_image_url(bucket_name, object_key):
-    return f"https://{bucket_name}.s3.ap-southeast-2.amazonaws.com/{object_key}"
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -127,28 +164,6 @@ class EventViewSet(viewsets.ModelViewSet):
         print("Files in request:", request.FILES)
         print("Data in request:", request.data)
         print("Content-Type:", request.content_type)
-        file = request.FILES.get('image')
-        if not file:
-            return JsonResponse({
-                "message": "No image provided",
-                "status": "error"
-            }, status=400)
-
-        bucket_name = settings.AWS_STORAGE_BUCKET_NAME
-        object_key = f"event_images/{file.name}"
-        try:
-            s3_client.put_object(
-                Bucket=bucket_name,
-                Key=object_key,
-                Body=file.read(),
-                ContentType=file.content_type
-            )
-        except Exception as e:
-            return JsonResponse({
-                "message": f"Failed to upload image to S3: {str(e)}",
-                "status": "error"
-            }, status=500)
-
 
         event_data = request.data
         event = Events.objects.create(
@@ -161,17 +176,15 @@ class EventViewSet(viewsets.ModelViewSet):
             organizer=event_data['organizer'],
             contact_email=event_data['contact_email'],
             is_virtual=event_data['is_virtual'],
-            image_url=f"event_images/{file.name}"  # Store the image path in the event
         )
 
-        image_url = generate_s3_image_url(bucket_name, object_key)
+        invalidate_events_list_cache()
 
         response_data = {
             'message': 'Event Created successfully',
             'status': 'success',
             "data": {
                 "id": event.id,
-                "image_url": image_url,
                 "name": event.name,
                 "category": event.category,
                 "title": event.title,
@@ -205,45 +218,18 @@ class EventViewSet(viewsets.ModelViewSet):
     def update_event(self, request, *args, **kwargs):
         partial = kwargs.get('partial', request.method == 'PATCH')
         instance = self.get_object()
-        file = request.FILES.get('image')
-        if file:
-            bucket_name = settings.AWS_STORAGE_BUCKET_NAME
-            object_key = f"event_images/{file.name}"
 
-            try:
-                s3_client.put_object(
-                    Bucket=bucket_name,
-                    Key=object_key,
-                    Body=file.read(),
-                    ContentType=file.content_type
-                )
-                mutable_data = request.data.copy()
-                mutable_data['image_url'] = f"event_images/{file.name}"
-
-
-                serializer = self.get_serializer(instance, data=mutable_data, partial=partial)
-            except Exception as e:
-                return Response({
-                    "message": f"Failed to upload image to S3: {str(e)}",
-                    "status": "error",
-                    "data": None
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        else:
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
 
         if serializer.is_valid():
             event_instance = serializer.save()
-            if file:
-                image_url = generate_s3_image_url(bucket_name, object_key)
-                response_data = EventsSerializer(event_instance).data
-                response_data['image_url'] = image_url
-            else:
-                response_data = EventsSerializer(event_instance).data
 
+            invalidate_events_list_cache()
+            invalidate_event_detail_cache(instance.id)
             return Response({
                 'message': 'Event Updated Successfully',
                 'status': 'success',
-                'data': response_data
+                'data': serializer.data
             }, status=status.HTTP_200_OK)
 
         return Response({
@@ -270,6 +256,7 @@ class EventViewSet(viewsets.ModelViewSet):
 
         cache_key = generate_events_cache_key(request)
         cached_response = cache.get(cache_key)
+
         if cached_response:
             print(f"Cache hit for key: {cache_key}")
             return Response(cached_response)
@@ -277,74 +264,60 @@ class EventViewSet(viewsets.ModelViewSet):
 
 
         queryset = self.filter_queryset(self.get_queryset())
-        for event in queryset:
-            print(f"Event {event.id} has image_url in DB: {event.image_url}")
 
         page = self.paginate_queryset(queryset)
 
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            for item in serializer.data:
-                print(f"Serialized event {item['id']} has image_url: {item.get('image_url')}")
+            paginated_response = self.get_paginated_response(serializer.data)
 
-            return self.get_paginated_response(serializer.data)
+            cache.set(cache_key,paginated_response.data,CACHE_TIMEOUT_MEDIUM)
+            print(f"Cached response for key: {cache_key}")
+            return paginated_response
         else:
             serializer = self.get_serializer(queryset, many=True)
-
-            return Response({
-                'message': 'Events retrieved successfully',
-                'status': 'success',
-                'data': {
+            response_data = {
+                'message':'Events retrieved successfully',
+                'status':'success',
+                'data':{
                     'count': queryset.count(),
                     'next': None,
                     'previous': None,
                     'results': serializer.data
                 }
-            }, status=status.HTTP_200_OK)
+            }
+            cache.set(cache_key,response_data,CACHE_TIMEOUT_MEDIUM)
+            print(f"Cached response for key: {cache_key}")
 
+            return Response(response_data,status=status.HTTP_200_OK)
 
-
-    @swagger_auto_schema(
-        tags=["Events"],
-        method='delete',
-        operation_summary="Deletes an event",
-        operation_description="Delete an event by its ID",
-        responses={
-            204: openapi.Response(
-                description="Event deleted successfully",
-                examples={
-                    "application/json":{
-                        "message": "Event deleted successfully",
-                        "status":"success",
-                        "data": None
-                    }
-                }
-            ),
-            400: openapi.Response(
-                description="Error deleting event",
-                examples={
-                    "application/json":{
-                        "message":"Error deleting the event",
-                        "status":"failed",
-                        "data":None
-                    }
-                }
-            ),
-        },
-    )
-    @action(detail=True, methods=['delete'], url_path='delete', url_name='delete-event')
-    def destroy_event(self, request, *args, **kwargs):
+    def destroy(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
+            event_id = instance.id
+
+
+            invalidate_events_list_cache()
+            invalidate_event_detail_cache(event_id)
+            invalidate_event_registration_cache(event_id)
+
+
             instance.delete()
+
             return Response({
                 'message': 'Event deleted successfully',
                 'status': 'success',
                 'data': None
             }, status=status.HTTP_204_NO_CONTENT)
+        except Events.DoesNotExist:
+            return Response({
+                'message': 'Event not found',
+                'status': 'failed',
+                'data': None
+            }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({
-                'message': 'Error deleting the event',
+                'message': f'Error deleting the event: {str(e)}',
                 'status': 'failed',
                 'data': None
             }, status=status.HTTP_400_BAD_REQUEST)
@@ -396,7 +369,24 @@ class EventViewSet(viewsets.ModelViewSet):
     def retrieve_event(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
+            event_id = instance.id
+
+            cache_key = generate_event_detail_cache_key(event_id)
+            cached_data = cache.get(cache_key)
+
+            if cached_data:
+                print(f"Cache hit for event detail: {event_id}")
+                return Response({
+                    'message': 'Event details fetched successfully',
+                    'status': 'success',
+                    'data': cached_data
+                }, status=status.HTTP_200_OK)
+
+            print(f"Cache miss for event detail: {event_id}")
+
             serializer = self.get_serializer(instance)
+            cache.set(cache_key, serializer.data, CACHE_TIMEOUT_LONG)
+            print(f"Cached event detail for event: {event_id}")
 
             return Response({
                 'message': 'Event details fetched successfully',
@@ -448,25 +438,42 @@ class EventViewSet(viewsets.ModelViewSet):
                     'data': None
                 }, status=status.HTTP_400_BAD_REQUEST)
 
+            cache_key = generate_event_by_name_cache_key(event_name)
+            cached_data = cache.get(cache_key)
+
+            if cached_data:
+                print(f"Cache hit for event by name: {event_name}")
+                return Response(cached_data, status=status.HTTP_200_OK)
+
+            print(f"Cache miss for event by name: {event_name}")
+
             instance = Events.objects.filter(
                 Q(name__iexact=event_name) |
                 Q(name__icontains=event_name)
             ).first()
 
             if not instance:
-                return Response({
+                error_response = {
                     'message': f'Event with name "{event_name}" not found',
                     'status': 'failed',
                     'data': None
-                }, status=status.HTTP_404_NOT_FOUND)
+                }
+
+                cache.set(cache_key, error_response, CACHE_TIMEOUT_SHORT)
+                return Response(error_response, status=status.HTTP_404_NOT_FOUND)
 
             serializer = self.get_serializer(instance)
 
-            return Response({
+            success_response = {
                 'message': 'Event details fetched successfully',
                 'status': 'success',
                 'data': serializer.data
-            }, status=status.HTTP_200_OK)
+            }
+
+            cache.set(cache_key, success_response, CACHE_TIMEOUT_MEDIUM)
+            print(f"Cached event by name result for: {event_name}")
+
+            return Response(success_response, status=status.HTTP_200_OK)
 
         except Exception as e:
             print(f"Error in get_event_by_name: {str(e)}")  # Debug print
@@ -557,6 +564,11 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
 
                 event = registration.event
 
+                invalidate_user_registration_cache(email=email)
+                if request.user.is_authenticated:
+                    invalidate_user_registration_cache(user_id=request.user)
+                invalidate_event_registration_cache(event_pk)
+
                 return Response({
                     "message": "successfully registered for the event",
                     "status": "success",
@@ -593,6 +605,7 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
             'status': 'failed',
             'data': None
         }, status=status.HTTP_400_BAD_REQUEST)
+
     @swagger_auto_schema(
         tags=["Event Registration"],
         method='get',
@@ -639,20 +652,34 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
                     'status': 'failed',
                     'data': None
                 }, status=status.HTTP_400_BAD_REQUEST)
+
+            cache_key = generate_user_registration_cache_key(email,'email')
+            cached_data = cache.get(cache_key)
+
+            if cached_data:
+                print(f"Cache hit for user registrations: {email}")
+                return Response(cached_data,status=status.HTTP_200_OK)
+            print(f"Cache miss for user registrations: {email}")
+
             registrations = EventRegistration.objects.filter(email=email)
 
             if not registrations.exists():
-                return Response({
+                response_data = {
                     'message': 'No registered events found for this email',
                     'status': 'success',
                     'data': []
-                }, status=status.HTTP_200_OK)
+                }
             serializer = EventRegistrationSerializer(registrations, many=True)
-            return Response({
-                'message': 'Registered events retrieved successfully',
-                'status': 'success',
-                'data': serializer.data
-            }, status=status.HTTP_200_OK)
+            response_data = {
+                'message':'Registered events retrieved successfully',
+                'status':'success',
+                'data':serializer.data
+            }
+
+            cache.set(cache_key,response_data,CACHE_TIMEOUT_MEDIUM)
+            print(f"Cached user registrations for: {email}")
+
+            return Response(response_data,status=status.HTTP_200_OK)
 
         except Exception as e:
             return Response({
@@ -707,32 +734,51 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
                     'status': 'failed',
                     'data': None
                 }, status=status.HTTP_400_BAD_REQUEST)
+
+            cache_key = generate_user_registration_cache_key(user_id,'user_id')
+            cached_data = cache.get(cache_key)
+
+            if cached_data:
+                print(f"Cache hit for user registrations by user_id: {user_id}")
+                return Response(cached_data,status=status.HTTP_200_OK)
+
+            print(f"cache miss for user registrations by user_id: {user_id}")
+
             try:
                 from django.contrib.auth import get_user_model
                 User = get_user_model()
                 user = User.objects.get(id=user_id)
                 user_email = user.email
             except User.DoesNotExist:
-                return Response({
-                    'message': 'User not found',
-                    'status': 'failed',
+                error_respose = {
+                    'message':'User not found',
+                    'status':'failed',
                     'data': None
-                }, status=status.HTTP_404_NOT_FOUND)
+                }
+
+                cache.set(cache_key,error_respose,CACHE_TIMEOUT_SHORT)
+                return Response(error_respose,status=status.HTTP_404_NOT_FOUND)
+
             registrations = EventRegistration.objects.filter(email=user_email)
 
             if not registrations.exists():
-                return Response({
+                response_data = {
                     'message': 'No registrations found for this user',
                     'status': 'success',
                     'data': []
-                }, status=status.HTTP_200_OK)
+                }
             serializer = self.get_serializer(registrations, many=True)
 
-            return Response({
-                'message': 'User registrations retrieved successfully',
-                'status': 'success',
-                'data': serializer.data
-            }, status=status.HTTP_200_OK)
+            response_data = {
+                'message':'user registrations retrieved successfully',
+                'status':'success',
+                'data':serializer.data
+            }
+
+            cache.set(cache_key, response_data, CACHE_TIMEOUT_MEDIUM)
+            print(f"Cached user registrations for user_id: {user_id}")
+
+            return Response(response_data, status=status.HTTP_200_OK)
 
         except Exception as e:
             return Response({
@@ -780,21 +826,36 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
                     'status': 'failed',
                     'data': None
                 }, status=status.HTTP_401_UNAUTHORIZED)
+
+            cache_key = generate_user_registration_cache_key(request.user.id, 'auth_user')
+            cached_data = cache.get(cache_key)
+
+            if cached_data:
+                print(f"Cache hit for authenticated user registrations: {request.user.id}")
+                return Response(cached_data, status=status.HTTP_200_OK)
+
+            print(f"Cache miss for authenticated user registrations: {request.user.id}")
+
             registrations = EventRegistration.objects.filter(user=request.user).select_related('event')
 
             if not registrations.exists():
-                return Response({
+                response_data = {
                     'message': 'You have no registered events',
                     'status': 'success',
                     'data': []
-                }, status=status.HTTP_200_OK)
+                }
             serializer = MyRegistrationSerializer(registrations, many=True)
 
-            return Response({
+            response_data = {
                 'message': 'Your registered events retrieved successfully',
                 'status': 'success',
                 'data': serializer.data
-            }, status=status.HTTP_200_OK)
+            }
+
+            cache.set(cache_key, response_data, CACHE_TIMEOUT_MEDIUM)
+            print(f"Cached authenticated user registrations: {request.user.id}")
+
+            return Response(response_data, status=status.HTTP_200_OK)
 
         except Exception as e:
             return Response({
@@ -841,6 +902,22 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
     )
     def list(self, request, *args, **kwargs):
         try:
+            event_pk = self.kwargs.get('event_pk')
+            page_number = request.query_params.get('page', 1)
+            page_size = request.query_params.get('page_size', 10)
+
+            if event_pk:
+                cache_key = generate_event_registrations_cache_key(event_pk, page_number, page_size)
+            else:
+                cache_key = f"all_registrations_page_{page_number}_size_{page_size}"
+
+            cached_data = cache.get(cache_key)
+            if cached_data:
+                print(f"Cache hit for registrations list: {cache_key}")
+                return Response(cached_data, status=status.HTTP_200_OK)
+
+            print(f"Cache miss for registrations list: {cache_key}")
+
             queryset = self.filter_queryset(self.get_queryset())
             page = self.paginate_queryset(queryset)
 
@@ -848,7 +925,7 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
                 serializer = self.get_serializer(page, many=True)
                 paginated_data = self.paginator.get_paginated_response(serializer.data)
 
-                return Response({
+                response_data = {
                     'message': 'Event registrations retrieved successfully',
                     'status': 'success',
                     'data': {
@@ -857,18 +934,23 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
                         'previous': paginated_data.data['previous'],
                         'results': paginated_data.data['results']
                     }
-                }, status=status.HTTP_200_OK)
+                }
             serializer = self.get_serializer(queryset, many=True)
-            return Response({
+            response_data = {
                 'message': 'Event registrations retrieved successfully',
                 'status': 'success',
                 'data': {
                     'count': len(serializer.data),
                     'next': None,
                     'previous': None,
-                    'data': serializer.data
+                    'results': serializer.data
                 }
-            }, status=status.HTTP_200_OK)
+            }
+
+            cache.set(cache_key, response_data, CACHE_TIMEOUT_MEDIUM)
+            print(f"Cached registrations list: {cache_key}")
+
+            return Response(response_data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({
                 'message': f'Error retreiving registrations:{str(e)}',
