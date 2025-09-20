@@ -291,36 +291,6 @@ class EventViewSet(viewsets.ModelViewSet):
 
             return Response(response_data,status=status.HTTP_200_OK)
 
-
-
-    # @swagger_auto_schema(
-    #     tags=["Events"],
-    #     method='delete',
-    #     operation_summary="Deletes an event",
-    #     operation_description="Delete an event by its ID",
-    #     responses={
-    #         204: openapi.Response(
-    #             description="Event deleted successfully",
-    #             examples={
-    #                 "application/json":{
-    #                     "message": "Event deleted successfully",
-    #                     "status":"success",
-    #                     "data": None
-    #                 }
-    #             }
-    #         ),
-    #         400: openapi.Response(
-    #             description="Error deleting event",
-    #             examples={
-    #                 "application/json":{
-    #                     "message":"Error deleting the event",
-    #                     "status":"failed",
-    #                     "data":None
-    #                 }
-    #             }
-    #         ),
-    #     },
-    # )
     def destroy(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
