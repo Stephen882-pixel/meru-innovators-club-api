@@ -1,4 +1,5 @@
 import csv
+from datetime import datetime, timezone
 import boto3
 from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
@@ -20,6 +21,9 @@ from django.core.cache import cache
 from django.views.decorators.cache import cache_page
 import hashlib
 import json
+from django.utils import timezone
+from django.utils import timezone as django_timezone
+from datetime import datetime
 # Create your views here.
 
 CACHE_TIMEOUT_SHORT = 5 * 60
@@ -130,6 +134,7 @@ class EventViewSet(viewsets.ModelViewSet):
     pagination_class = EventPagination
     parser_classes = (MultiPartParser, FormParser)
 
+
     @swagger_auto_schema(
         tags=["Events"],
         method='post',
@@ -161,43 +166,85 @@ class EventViewSet(viewsets.ModelViewSet):
     )
     @action(methods=['post'], detail=False, url_path='add', url_name='add-event')
     def create_event(self, request, *args, **kwargs):
-        print("Files in request:", request.FILES)
-        print("Data in request:", request.data)
-        print("Content-Type:", request.content_type)
+        try:
+            print("Files in request:", request.FILES)
+            print("Data in request:", request.data)
+            print("Content-Type:", request.content_type)
 
-        event_data = request.data
-        event = Events.objects.create(
-            name=event_data['name'],
-            category=event_data['category'],
-            title=event_data['title'],
-            description=event_data['description'],
-            date=event_data['date'],
-            location=event_data['location'],
-            organizer=event_data['organizer'],
-            contact_email=event_data['contact_email'],
-            is_virtual=event_data['is_virtual'],
-        )
+            event_data = request.data
+            
+        
+            is_virtual = event_data.get('is_virtual', False)
+            if isinstance(is_virtual, str):
+                is_virtual = is_virtual.lower() == 'true'
+            
+        
+            date_str = event_data.get('date')
+            if date_str:
+                
+                naive_datetime = datetime.fromisoformat(date_str.replace('T', ' '))
+                
+                event_date = django_timezone.make_aware(naive_datetime)
+            else:
+                return Response(
+                    {
+                        'message': 'Date is required',
+                        'status': 'error'
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            
+            event = Events.objects.create(
+                name=event_data['name'],
+                category=event_data['category'],
+                title=event_data['title'],
+                description=event_data['description'],
+                date=event_date,
+                location=event_data['location'],
+                organizer=event_data['organizer'],
+                contact_email=event_data['contact_email'],
+                is_virtual=is_virtual,
+            )
 
-        invalidate_events_list_cache()
+            invalidate_events_list_cache()
 
-        response_data = {
-            'message': 'Event Created successfully',
-            'status': 'success',
-            "data": {
-                "id": event.id,
-                "name": event.name,
-                "category": event.category,
-                "title": event.title,
-                "description": event.description,
-                "date": event.date,
-                "location": event.location,
-                "organizer": event.organizer,
-                "contact_email": event.contact_email,
-                "is_virtual": event.is_virtual,
+            response_data = {
+                'message': 'Event Created successfully',
+                'status': 'success',
+                "data": {
+                    "id": event.id,
+                    "name": event.name,
+                    "category": event.category,
+                    "title": event.title,
+                    "description": event.description,
+                    "date": event.date.isoformat(),
+                    "location": event.location,
+                    "organizer": event.organizer,
+                    "contact_email": event.contact_email,
+                    "is_virtual": event.is_virtual,
+                }
             }
-        }
 
-        return JsonResponse(response_data)
+            return Response(response_data, status=status.HTTP_201_CREATED)
+            
+        except KeyError as e:
+            return Response(
+                {
+                    'message': f'Missing required field: {str(e)}',
+                    'status': 'error'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            print(f"Error creating event: {str(e)}")
+            return Response(
+                {
+                    'message': f'Failed to create event: {str(e)}',
+                    'status': 'error'
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
     @swagger_auto_schema(
         tags=["Events"],
@@ -254,6 +301,7 @@ class EventViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='list', url_name='list-events')
     def list_events(self, request, *args, **kwargs):
 
+
         cache_key = generate_events_cache_key(request)
         cached_response = cache.get(cache_key)
 
@@ -290,8 +338,9 @@ class EventViewSet(viewsets.ModelViewSet):
             print(f"Cached response for key: {cache_key}")
 
             return Response(response_data,status=status.HTTP_200_OK)
-
-    def destroy(self, request, *args, **kwargs):
+    
+    @action(detail=True, methods=['delete'], url_path='delete', url_name='delete-event')
+    def delete_event(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
             event_id = instance.id
@@ -320,7 +369,7 @@ class EventViewSet(viewsets.ModelViewSet):
                 'message': f'Error deleting the event: {str(e)}',
                 'status': 'failed',
                 'data': None
-            }, status=status.HTTP_400_BAD_REQUEST)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @swagger_auto_schema(
         tags=["Events"],
@@ -365,6 +414,7 @@ class EventViewSet(viewsets.ModelViewSet):
             ),
         },
     )
+
     @action(detail=True, methods=['get'], url_path='view', url_name='view-event')
     def retrieve_event(self, request, *args, **kwargs):
         try:
@@ -817,6 +867,7 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
             500: "Internal server error"
         }
     )
+
     @action(detail=False, methods=['get'], url_path='my-registrations')
     def get_my_registrations(self, request, *args, **kwargs):
         try:
@@ -827,48 +878,60 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
                     'data': None
                 }, status=status.HTTP_401_UNAUTHORIZED)
 
+            # Check if we should bypass cache (for testing/debugging)
+            bypass_cache = request.query_params.get('no_cache', 'false').lower() == 'true'
+            
             cache_key = generate_user_registration_cache_key(request.user.id, 'auth_user')
-            cached_data = cache.get(cache_key)
-
-            if cached_data:
-                print(f"Cache hit for authenticated user registrations: {request.user.id}")
-                return Response(cached_data, status=status.HTTP_200_OK)
+            
+            if not bypass_cache:
+                cached_data = cache.get(cache_key)
+                if cached_data:
+                    print(f"Cache hit for authenticated user registrations: {request.user.id}")
+                    return Response(cached_data, status=status.HTTP_200_OK)
 
             print(f"Cache miss for authenticated user registrations: {request.user.id}")
 
-            registrations = EventRegistration.objects.filter(user=request.user).select_related('event')
+            # Fetch registrations from database
+            registrations = EventRegistration.objects.filter(
+                user=request.user
+            ).select_related('event')
+            
+            # Debug information
+            print(f"User ID: {request.user.id}")
+            print(f"Registrations count: {registrations.count()}")
+            if registrations.exists():
+                print(f"Registrations: {list(registrations.values('id', 'user_id', 'event_id'))}")
 
+            # Build response based on whether registrations exist
             if not registrations.exists():
                 response_data = {
                     'message': 'You have no registered events',
                     'status': 'success',
                     'data': []
                 }
-            serializer = MyRegistrationSerializer(registrations, many=True)
+            else:
+                serializer = MyRegistrationSerializer(registrations, many=True)
+                response_data = {
+                    'message': 'Your registered events retrieved successfully',
+                    'status': 'success',
+                    'data': serializer.data
+                }
 
-            response_data = {
-                'message': 'Your registered events retrieved successfully',
-                'status': 'success',
-                'data': serializer.data
-            }
-
+            # Cache the response
             cache.set(cache_key, response_data, CACHE_TIMEOUT_MEDIUM)
             print(f"Cached authenticated user registrations: {request.user.id}")
 
             return Response(response_data, status=status.HTTP_200_OK)
 
         except Exception as e:
+            print(f"Error in get_my_registrations: {str(e)}")
             return Response({
                 'message': f'Error retrieving your registrations: {str(e)}',
                 'status': 'failed',
                 'data': None
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    def get_queryset(self):
-        event_pk = self.kwargs.get('event_pk')
-        if event_pk:
-            return EventRegistration.objects.filter(event_id=event_pk)
-        return super().get_queryset()
+    
 
     @swagger_auto_schema(
         tags=["Event Registration"],

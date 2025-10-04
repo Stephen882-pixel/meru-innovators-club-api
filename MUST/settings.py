@@ -15,7 +15,11 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'False'
 
 # Allowed Hosts Configuration
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '.app.github.dev',  # This allows all VS Code forwarded URLs
+]
 
 # Ensure SECRET_KEY is not empty
 if not SECRET_KEY:
@@ -225,8 +229,22 @@ TEMPLATES = [
 ]
 
 # CORS Configuration
-CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'True').lower() == 'true'
-CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',') if not CORS_ALLOW_ALL_ORIGINS else []
+# CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'True').lower() == 'true'
+# CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',') if not CORS_ALLOW_ALL_ORIGINS else []
+
+CORS_ALLOWED_ORIGINS = [
+    'https://meru-innovators-club-frontend.vercel.app',
+    'http://localhost:4200',
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+# CSRF Settings
+CSRF_TRUSTED_ORIGINS = [
+    'https://meru-innovators-club-frontend.vercel.app',
+    'http://localhost:4200',
+    'https://n87qqn9j-3000.euw.devtunnels.ms/'
+]
 
 # JWT and Authentication Settings
 ACCOUNT_EMAIL_VERIFICATION = "none"
@@ -244,3 +262,4 @@ CACHES = {
     }
 }
 
+FRONTEND_BASE_URL = 'https://meru-innovators-club-frontend.vercel.app'
