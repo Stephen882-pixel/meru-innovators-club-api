@@ -263,3 +263,5 @@ CACHES = {
 }
 
 FRONTEND_BASE_URL = 'https://meru-innovators-club-frontend.vercel.app'
+
+APPEND_SLASH = True
