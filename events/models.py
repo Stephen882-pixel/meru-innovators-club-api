@@ -7,7 +7,7 @@ import uuid
 class Events(models.Model):
     CATEGORY_CHOICE = [
         ('WEB', 'Web Development'),
-        ('CYBERSEC', 'Cyber Security'),
+        ('CYBERSECURITY', 'Cyber Security'),
         ('ANDROID', 'Android Development'),
         ('AI', 'Artificial Intelligence'),
         ('BLOCKCHAIN', 'Blockchain'),
