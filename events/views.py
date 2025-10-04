@@ -867,7 +867,6 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
             500: "Internal server error"
         }
     )
-
     @action(detail=False, methods=['get'], url_path='my-registrations')
     def get_my_registrations(self, request, *args, **kwargs):
         try:
@@ -878,7 +877,7 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
                     'data': None
                 }, status=status.HTTP_401_UNAUTHORIZED)
 
-            # Check if we should bypass cache (for testing/debugging)
+            
             bypass_cache = request.query_params.get('no_cache', 'false').lower() == 'true'
             
             cache_key = generate_user_registration_cache_key(request.user.id, 'auth_user')
@@ -891,18 +890,18 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
 
             print(f"Cache miss for authenticated user registrations: {request.user.id}")
 
-            # Fetch registrations from database
+           
             registrations = EventRegistration.objects.filter(
                 user=request.user
-            ).select_related('event')
+            ).select_related('event').order_by('-registration_timestamp')
             
-            # Debug information
+            # Debug information - Changed 'id' to 'uid'
             print(f"User ID: {request.user.id}")
             print(f"Registrations count: {registrations.count()}")
             if registrations.exists():
-                print(f"Registrations: {list(registrations.values('id', 'user_id', 'event_id'))}")
+                print(f"Registrations: {list(registrations.values('uid', 'user_id', 'event_id', 'ticket_number'))}")
 
-            # Build response based on whether registrations exist
+           
             if not registrations.exists():
                 response_data = {
                     'message': 'You have no registered events',
@@ -917,7 +916,7 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
                     'data': serializer.data
                 }
 
-            # Cache the response
+          
             cache.set(cache_key, response_data, CACHE_TIMEOUT_MEDIUM)
             print(f"Cached authenticated user registrations: {request.user.id}")
 
@@ -925,12 +924,13 @@ class EventRegistrationViewSet(viewsets.ModelViewSet):
 
         except Exception as e:
             print(f"Error in get_my_registrations: {str(e)}")
+            import traceback
+            traceback.print_exc()  
             return Response({
                 'message': f'Error retrieving your registrations: {str(e)}',
                 'status': 'failed',
                 'data': None
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
     
 
     @swagger_auto_schema(
