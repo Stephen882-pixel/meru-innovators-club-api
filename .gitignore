@@ -126,3 +126,5 @@ Thumbs.db
 virt/
 secrets.json
 myenv/
+
+spring-demo-aws.pem
