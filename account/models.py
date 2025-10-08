@@ -27,7 +27,7 @@ class PasswordResetRequest(models.Model):
         return f"Password change for {self.user.username} - {self.token}"
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    course = models.CharField(max_length=50)
+    course = models.CharField(max_length=500)
     registration_no = models.CharField(max_length=50,blank=True,null=True)
     bio = models.CharField(max_length=255, null=True, blank=True)
     tech_stacks = models.TextField(blank=True,null=True) # Will store as JSON string
