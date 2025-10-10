@@ -73,35 +73,34 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
 ]
 
+
 ROOT_URLCONF = 'MUST.urls'
 WSGI_APPLICATION = 'MUST.wsgi.application'
-
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'must_innovators',
-        'USER': 'root',
-        'PASSWORD': 'Kundan@1234',
-        'HOST': 'localhost',
-        'PORT': '3306',
-        'CONN_MAX_AGE':600,
-        'CONN_HEALTH_CHECKS': True,
-        'OPTIONS':{
-            'init_command':"SET sql_mode='STRICT_TRANS_TABLES'",
-            'charset':'utf8mb4',
-            'use_unicode':True,
-            'autocommit':True,
-
-            'connect_timeout':10,
-            'read_timeout':30,
-            'write_timeout':30,
-
-            'sql_mode':'TRADITIONAL',
-            'isolation_level': 'read committed',
+        'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.mysql'),
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '3306'),
+        'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', 0)),
+        'CONN_HEALTH_CHECKS': os.getenv('DB_CONN_HEALTH_CHECKS', 'False') == 'True',
+        'OPTIONS': {
+            'init_command': os.getenv('DB_INIT_COMMAND'),
+            'charset': os.getenv('DB_CHARSET', 'utf8mb4'),
+            'use_unicode': os.getenv('DB_USE_UNICODE', 'True') == 'True',
+            'autocommit': os.getenv('DB_AUTOCOMMIT', 'True') == 'True',
+            'connect_timeout': int(os.getenv('DB_CONNECT_TIMEOUT', 10)),
+            'read_timeout': int(os.getenv('DB_READ_TIMEOUT', 30)),
+            'write_timeout': int(os.getenv('DB_WRITE_TIMEOUT', 30)),
+            'sql_mode': os.getenv('DB_SQL_MODE', 'TRADITIONAL'),
+            'isolation_level': os.getenv('DB_ISOLATION_LEVEL', 'read committed'),
         },
-        'ATOMIC_REQUESTS':True
+        'ATOMIC_REQUESTS': os.getenv('DB_ATOMIC_REQUESTS', 'True') == 'True',
     }
 }
+
 
 
 
@@ -197,9 +196,6 @@ TEMPLATES = [
     },
 ]
 
-# CORS Configuration
-# CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'True').lower() == 'true'
-# CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',') if not CORS_ALLOW_ALL_ORIGINS else []
 
 CORS_ALLOWED_ORIGINS = [
     'https://meru-innovators-club-frontend.vercel.app',
