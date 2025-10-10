@@ -3,7 +3,7 @@ name: Deploy to EC2
 on:
   push:
     branches:
-      - deployment  # change to 'main' if you deploy from main branch
+      - deployment   # Runs when you push to the 'deployment' branch
 
 jobs:
   deploy:
@@ -22,8 +22,27 @@ jobs:
       - name: Deploy to EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            cd ${{ secrets.DEPLOY_PATH }}
+            cd /home/ubuntu/myproject/meru-innovators-club-api
+
+            echo "Fetching latest code from deployment branch..."
             git fetch --all
-            git reset --hard origin/deployment  # ensure latest code
-            ./deploy.sh
+            git reset --hard origin/deployment
+
+            echo "Activating virtual environment..."
+            source /home/ubuntu/myproject/virtual/bin/activate
+
+            echo "Installing dependencies..."
+            pip install -r requirements.txt
+
+            echo "Running migrations..."
+            python manage.py migrate --noinput
+
+            echo "Collecting static files..."
+            python manage.py collectstatic --noinput
+
+            echo "Restarting Gunicorn..."
+            sudo systemctl restart gunicorn
+
+            echo "Deployment complete!"
           EOF
+
