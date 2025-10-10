@@ -76,37 +76,6 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'MUST.urls'
 WSGI_APPLICATION = 'MUST.wsgi.application'
 
-# Database Configuration for Neon PostgreSQL
-# DATABASES = {
-#     'default': dj_database_url.config(
-#         default=os.environ.get('DATABASE_URL'),
-#         conn_max_age=600,
-#         ssl_require=True
-#     )
-# }
-
-
-
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-
-
-# DATABASES = {
-#     'default':{
-#         'ENGINE':'django.db.backends.postgresql',
-#         'NAME':os.environ.get('DB_NAME','postgres'),
-#         'USER':os.environ.get('DB_USER','postgres'),
-#         'PASSWORD':os.environ.get('DB_PASSWORD','postgres'),
-#         'HOST':os.environ.get('DB_HOST','localhost'),
-#         'POST': os.environ.get('DB_PORT','5432')
-#     }
-# }
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
@@ -263,3 +232,5 @@ CACHES = {
 }
 
 FRONTEND_BASE_URL = 'https://meru-innovators-club-frontend.vercel.app'
+
+APPEND_SLASH = True
