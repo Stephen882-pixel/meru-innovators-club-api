@@ -23,7 +23,7 @@ ALLOWED_HOSTS = [
     '.app.github.dev',  # This allows all VS Code forwarded URLs
 ]
 
-# Ensure SECRET_KEY is not empty
+# Ensure SECRET_KEY is not empt
 if not SECRET_KEY:
     raise ValueError("The DJANGO_SECRET_KEY environment variable must be set")
 
