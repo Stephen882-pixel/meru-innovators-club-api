@@ -206,7 +206,7 @@ CORS_ALLOWED_ORIGINS = [
 
 CORS_ALLOW_CREDENTIALS = True
 
-# CSRF Settings
+# CSRF Setting
 CSRF_TRUSTED_ORIGINS = [
     'https://meru-innovators-club-frontend.vercel.app',
     'http://localhost:4200',
