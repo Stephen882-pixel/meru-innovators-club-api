@@ -48,7 +48,7 @@ jobs:
 
             echo "$(date) - Reloading systemd and restarting Gunicorn..."
             sudo systemctl daemon-reload
-            sudo nohup systemctl restart gunicorn &
+            sudo systemctl restart gunicorn
 
             echo "$(date) - Deployment complete!"
           EOF
