@@ -18,6 +18,8 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'False'
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
+    '63.180.6.177',
+    'ec2-63-180-6-177.eu-central-1.compute.amazonaws.com',
     '.app.github.dev',  # This allows all VS Code forwarded URLs
 ]
 

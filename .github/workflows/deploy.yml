@@ -21,28 +21,30 @@ jobs:
 
       - name: Deploy to EC2
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          ssh -tt -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            set -e  # Exit on any command failure
+
+            echo "$(date) - Navigating to project directory..."
             cd /home/ubuntu/myproject/meru-innovators-club-api
 
-            echo "Fetching latest code from deployment branch..."
+            echo "$(date) - Fetching latest code from deployment branch..."
             git fetch --all
             git reset --hard origin/deployment
 
-            echo "Activating virtual environment..."
+            echo "$(date) - Activating virtual environment..."
             source /home/ubuntu/myproject/virtual/bin/activate
 
-            echo "Installing dependencies..."
+            echo "$(date) - Installing dependencies..."
             pip install -r requirements.txt
 
-            echo "Running migrations..."
+            echo "$(date) - Running migrations..."
             python manage.py migrate --noinput
 
-            echo "Collecting static files..."
+            echo "$(date) - Collecting static files..."
             python manage.py collectstatic --noinput
 
-            echo "Restarting Gunicorn..."
+            echo "$(date) - Restarting Gunicorn..."
             sudo systemctl restart gunicorn
 
-            echo "Deployment complete!"
+            echo "$(date) - Deployment complete!"
           EOF
-
